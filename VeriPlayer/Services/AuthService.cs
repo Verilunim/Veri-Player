@@ -30,25 +30,35 @@ namespace VeriPlayer.Services
         public static void Init()
         {
             Users = Storage.LoadProtected(Storage.UsersFile, new List<UserAccount>()) ?? new List<UserAccount>();
-            ResetDefaultStaffPasswords();
+            RequireChangeOfDefaultPasswords();
             Save();
         }
 
+        private const string DefaultResetMark = "Стандартный пароль сброшен";
+
         /// <summary>
-        /// Раньше владелец и со-владелец создавались автоматически с паролем, равным нику.
-        /// Такие пароли сбрасываются: владелец задаёт новый на экране первого запуска,
-        /// остальным пароль задаёт владелец через админ-панель.
+        /// Раньше владелец и со-владелец создавались с паролем, равным нику. Такой пароль больше
+        /// не сбрасывается (это запирало аккаунт): он пускает один раз, после чего нужно задать новый.
         /// </summary>
-        private static void ResetDefaultStaffPasswords()
+        private static void RequireChangeOfDefaultPasswords()
         {
-            // стандартные пароли создавались ещё на старом числе итераций — новые хэши не проверяем,
-            // чтобы не тратить по полсекунды на каждого сотрудника при каждом запуске
-            foreach (var user in Users.Where(u => u.IsStaff && HasPassword(u) &&
-                                                  u.PasswordIterations < Iterations && Verify(u, u.Nick)))
+            foreach (var user in Users.Where(u => u.IsStaff))
             {
-                user.PasswordHash = "";
-                user.PasswordSalt = "";
-                LogActivity(user, "security", "Стандартный пароль сброшен");
+                if (!HasPassword(user))
+                {
+                    // версия 1.2.0.0 стирала стандартный пароль, и в аккаунт было не войти —
+                    // возвращаем прежний пароль (он и был равен нику) с обязательной сменой
+                    if (!user.Activity.Any(a => a.Text == DefaultResetMark)) continue;
+                    SetPassword(user, user.Nick);
+                    user.MustChangePassword = true;
+                    LogActivity(user, "security", "Доступ восстановлен: войдите со старым паролем и задайте новый");
+                }
+                // стандартные пароли создавались на старом числе итераций — новые хэши не проверяем,
+                // чтобы не тратить по полсекунды на каждого сотрудника при каждом запуске
+                else if (!user.MustChangePassword && user.PasswordIterations < Iterations && Verify(user, user.Nick))
+                {
+                    user.MustChangePassword = true;
+                }
             }
         }
 
@@ -202,6 +212,10 @@ namespace VeriPlayer.Services
             // пароль известен только сейчас — заодно пересчитываем хэш на актуальное число итераций
             if (user.PasswordIterations < Iterations) SetPassword(user, password);
 
+            // пароль, равный нику, знает кто угодно — у команды его нужно сменить сразу
+            if (user.IsStaff && string.Equals(password, user.Nick, StringComparison.OrdinalIgnoreCase))
+                user.MustChangePassword = true;
+
             user.LastLoginAt = DateTime.Now;
             user.LoginCount++;
             LicenseService.Touch(user);
@@ -209,6 +223,24 @@ namespace VeriPlayer.Services
             Current = user;
             Save();
             return (true, null, user);
+        }
+
+        /// <summary>
+        /// Обязательная смена пароля сразу после входа (стандартный пароль или восстановленный доступ).
+        /// </summary>
+        public static string CompleteRequiredChange(UserAccount user, string password, string confirm)
+        {
+            if (user == null || !ReferenceEquals(user, Current)) return "Сначала войдите в аккаунт.";
+            var error = ValidatePassword(password, confirm, user.IsStaff);
+            if (error != null) return error;
+            if (string.Equals(password, user.Nick, StringComparison.OrdinalIgnoreCase))
+                return "Пароль не должен совпадать с ником.";
+
+            SetPassword(user, password);
+            user.MustChangePassword = false;
+            LogActivity(user, "security", "Стандартный пароль заменён на новый");
+            Save();
+            return null;
         }
 
         private static string WaitText(TimeSpan span) =>

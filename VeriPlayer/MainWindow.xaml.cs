@@ -1304,6 +1304,7 @@ namespace VeriPlayer
         public void ToggleAdmin()
         {
             if (_player == null) return;
+            if (AuthService.Current == null || !AuthService.Current.IsStaff) return;
 
             // подхватываем аккаунты, зарегистрированные вне этого окна, — список всегда актуален
             AuthService.MergeFromDisk();

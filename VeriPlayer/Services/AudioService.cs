@@ -464,9 +464,14 @@ namespace VeriPlayer.Services
             public int Read(float[] buffer, int offset, int count)
             {
                 int read = _source.Read(buffer, offset, count);
-                for (int i = 0; i < read; i++)
+                // сэмплы идут вперемешку по каналам (L R L R…) — сводим кадр в моно,
+                // иначе FFT видит удвоенную частоту и спектр «уезжает» вверх
+                int channels = Math.Max(1, WaveFormat.Channels);
+                for (int i = 0; i + channels <= read; i += channels)
                 {
-                    _buffer[_position++] = buffer[offset + i];
+                    float sum = 0f;
+                    for (int c = 0; c < channels; c++) sum += buffer[offset + i + c];
+                    _buffer[_position++] = sum / channels;
                     if (_position >= FftSize)
                     {
                         _position = 0;

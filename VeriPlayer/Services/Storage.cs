@@ -87,10 +87,13 @@ namespace VeriPlayer.Services
                     if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                     var tmp = file + ".tmp";
                     File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
-                    if (File.Exists(file)) File.Delete(file);
-                    File.Move(tmp, file);
+                    // одна операция вместо Delete+Move: при сбое между ними файл пропадал целиком
+                    File.Move(tmp, file, true);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Diagnostics.Log("save " + Path.GetFileName(file) + ": " + ex.Message);
+                }
             }
         }
 

@@ -70,6 +70,8 @@ namespace VeriPlayer.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string FilePath { get; set; } = "";
+        /// <summary>Откуда файл был импортирован, если его скопировали в папку программы.</summary>
+        public string SourcePath { get; set; } = "";
         public string Title { get; set; } = "";
         public string Artist { get; set; } = "";
         public string Album { get; set; } = "";

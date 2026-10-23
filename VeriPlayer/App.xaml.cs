@@ -32,7 +32,7 @@ namespace VeriPlayer
             base.OnStartup(e);
 
             DispatcherUnhandledException += OnDispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += (s, args) => { };
+            AppDomain.CurrentDomain.UnhandledException += (s, args) => Diagnostics.Log("fatal: " + args.ExceptionObject);
 
             Settings = Storage.Load(Storage.SettingsFile, new AppSettings()) ?? new AppSettings();
             Settings.Volume = Math.Max(0, Math.Min(1, Settings.Volume));
@@ -114,6 +114,11 @@ namespace VeriPlayer
 
         public static bool TryHandleCommandLine(string[] args, MainWindow window)
         {
+#if !DEBUG
+            // отладочные ключи (--login, --register, --admin, --demo, --screenshot…) в релизе не нужны:
+            // они позволяли обходить экран входа и писать файлы по произвольным путям
+            return false;
+#else
             if (args == null || args.Length == 0) return false;
 
             string screenshot = null, view = null, modal = null, login = null, import = null, music = null;
@@ -296,6 +301,7 @@ namespace VeriPlayer
 
             window.Show();
             return true;
+#endif
         }
 
         private static string Next(string[] args, ref int index)

@@ -15,12 +15,19 @@ namespace VeriPlayer.Services
         
         // Discord Application ID — нужно зарегистрировать приложение на https://discord.com/developers/applications
         // Для теста используем заглушку; в реальности нужен настоящий ID
-        private const string ApplicationId = "1234567890123456789";
+        private static readonly string ApplicationId = "1234567890123456789";
 
         public static void Init()
         {
             if (_initialized) return;
             _initialized = true;
+
+            // с ID-заглушкой Discord отвергает подключение и при каждом запуске пишет ошибки в лог
+            if (ApplicationId == "1234567890123456789")
+            {
+                Diagnostics.Log("Discord RPC disabled: ApplicationId is not set (see DISCORD_SETUP.md)");
+                return;
+            }
 
             try
             {

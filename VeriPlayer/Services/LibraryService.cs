@@ -87,7 +87,11 @@ namespace VeriPlayer.Services
             await ImportGate.WaitAsync();
             try
             {
-                var known = new HashSet<string>(Tracks.Select(t => t.FilePath), StringComparer.OrdinalIgnoreCase);
+                // при копировании в библиотеку FilePath указывает на копию — сверяем и с исходным путём,
+                // иначе повторный импорт той же папки дублировал все треки
+                var known = new HashSet<string>(
+                    Tracks.Select(t => t.FilePath).Concat(Tracks.Select(t => t.SourcePath)).Where(p => !string.IsNullOrEmpty(p)),
+                    StringComparer.OrdinalIgnoreCase);
                 var added = new List<Track>();
                 int index = 0;
 
@@ -108,12 +112,14 @@ namespace VeriPlayer.Services
                             try
                             {
                                 var copy = Storage.CopyInto(file, Storage.CopiedMusicDir);
+                                track.SourcePath = file;
                                 track.FilePath = copy;
                                 track.FileSize = new FileInfo(copy).Length;
                             }
                             catch { }
                         }
 
+                        known.Add(file);
                         known.Add(track.FilePath);
                         track.AddedById = AuthService.Current?.Id ?? "";
                         track.AddedByName = AuthService.Current?.Nick ?? "system";
@@ -258,6 +264,8 @@ namespace VeriPlayer.Services
             if (track == null) return;
             if (deleteFile)
             {
+                // играющий файл заблокирован плеером — без остановки удаление молча не срабатывало
+                if (AudioService.Current == track) AudioService.Stop();
                 Storage.SafeDelete(track.FilePath);
                 Storage.SafeDelete(track.CoverPath);
                 Storage.SafeDelete(track.VideoPath);

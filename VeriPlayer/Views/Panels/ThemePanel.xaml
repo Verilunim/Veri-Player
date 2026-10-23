@@ -1,0 +1,50 @@
+<UserControl x:Class="VeriPlayer.Views.Panels.ThemePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:VeriPlayer.Controls"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <Grid Margin="26,4,26,24" Width="580">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Width="200">
+            <controls:ColorWheel x:Name="Wheel" Width="188" Height="188" HorizontalAlignment="Center" />
+            <Border x:Name="Preview" Height="46" CornerRadius="13" Margin="0,16,0,0"
+                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1" />
+            <TextBlock x:Name="HexText" Style="{StaticResource TextCaption}" HorizontalAlignment="Center"
+                       Margin="0,9,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Margin="30,2,0,0">
+            <TextBlock Text="Готовые оттенки" Style="{StaticResource FieldLabel}" />
+            <ItemsControl x:Name="Presets">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <TextBlock Text="Яркость" Style="{StaticResource FieldLabel}" Margin="0,20,0,6" />
+            <Slider x:Name="ValueSlider" Minimum="35" Maximum="100" ValueChanged="Value_Changed" />
+
+            <TextBlock Text="Сдвиг второго цвета" Style="{StaticResource FieldLabel}" Margin="0,18,0,6" />
+            <Slider x:Name="SecondHueSlider" Minimum="0" Maximum="180" ValueChanged="SecondHue_Changed" />
+
+            <CheckBox x:Name="AutoHue" Content="Автоматический перелив цвета" Margin="0,20,0,0"
+                      Click="AutoHue_Click" />
+
+            <TextBlock Text="Скорость перелива" Style="{StaticResource FieldLabel}" Margin="0,14,0,6" />
+            <Slider x:Name="SpeedSlider" Minimum="4" Maximum="70" ValueChanged="Speed_Changed" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                <Button Content="Сбросить" Style="{StaticResource BtnGhost}" Click="Reset_Click" />
+                <Button Content="Готово" Style="{StaticResource BtnPrimary}" Margin="10,0,0,0" Click="Done_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

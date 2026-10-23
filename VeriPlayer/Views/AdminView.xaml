@@ -1,0 +1,257 @@
+<UserControl x:Class="VeriPlayer.Views.AdminView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:VeriPlayer.Controls"
+             xmlns:conv="clr-namespace:VeriPlayer.Converters"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <conv:InverseBoolToVisibilityConverter x:Key="InvBoolToVis" />
+        <conv:EmptyStringToVisibilityConverter x:Key="EmptyToVis" />
+
+        <Style x:Key="UserItem" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bg" CornerRadius="12" Background="Transparent" Padding="8,6">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0FFFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource AccentSofterBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="UserRowTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <controls:AvatarView Grid.Column="0" Size="38" Source="{Binding AvatarPath}"
+                                     Initial="{Binding Initial}" />
+
+                <StackPanel Grid.Column="1" Margin="11,0,8,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Nick}" FontSize="13.5" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}" />
+                        <Border x:Name="BanChip" Background="#26FF5A6E" CornerRadius="999" Padding="7,1"
+                                Margin="8,0,0,0" VerticalAlignment="Center"
+                                Visibility="{Binding IsBanned, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="бан" FontSize="9.5" Foreground="#FFB3BD" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding RoleLabel}" FontSize="11" Margin="0,2,0,0"
+                               Foreground="{DynamicResource TextFaintBrush}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="2" Text="{Binding FavoriteCount}" FontSize="11.5"
+                           Foreground="{DynamicResource TextFaintBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ статистика ============ -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="18,15" Margin="26,18,26,0">
+            <Grid x:Name="Stats" />
+        </Border>
+
+        <Grid Grid.Row="1" Margin="26,16,26,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ список пользователей ============ -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="12">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBox x:Name="UserSearch" TextChanged="UserSearch_TextChanged" />
+                        <TextBlock Text="Поиск пользователя" IsHitTestVisible="False"
+                                   Foreground="{DynamicResource TextFaintBrush}" Margin="13,0,0,0"
+                                   VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=UserSearch}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <TextBlock x:Name="NoUsers" DockPanel.Dock="Bottom" Text="Никого не найдено"
+                               Style="{StaticResource TextCaption}" HorizontalAlignment="Center"
+                               Margin="0,10,0,4" Visibility="Collapsed" />
+
+                    <ListBox x:Name="UserList" ItemTemplate="{StaticResource UserRowTemplate}"
+                             ItemContainerStyle="{StaticResource UserItem}"
+                             SelectionChanged="UserList_SelectionChanged"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                </DockPanel>
+            </Border>
+
+            <!-- ============ карточка пользователя ============ -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
+                <Grid>
+                    <!-- никто не выбран -->
+                    <StackPanel x:Name="NothingSelected" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                MaxWidth="320">
+                        <Path Data="{StaticResource IconUser}" Width="46" Height="46" Stretch="Uniform"
+                              Stroke="{DynamicResource TextFaintBrush}" StrokeThickness="1.3"
+                              HorizontalAlignment="Center" />
+                        <TextBlock Text="Выберите пользователя" Style="{StaticResource TextH3}"
+                                   HorizontalAlignment="Center" Margin="0,16,0,0" />
+                        <TextBlock Text="Здесь появятся роль, активность и действия."
+                                   Style="{StaticResource TextMuted}" TextAlignment="Center"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" />
+                    </StackPanel>
+
+                    <!-- карточка -->
+                    <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel Margin="22,20,22,22">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <controls:AvatarView Grid.Column="0" Size="86" Ring="True"
+                                                     Source="{Binding AvatarPath}" Initial="{Binding Initial}" />
+
+                                <StackPanel Grid.Column="1" Margin="18,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Nick}" Style="{StaticResource TextH2}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                                        <Border Style="{StaticResource SoftChip}">
+                                            <TextBlock Text="{Binding RoleLabel}" FontSize="11.5"
+                                                       Foreground="{DynamicResource AccentTextBrush}" />
+                                        </Border>
+                                        <Border Style="{StaticResource SoftChip}" Background="#26FF5A6E" Margin="8,0,0,0"
+                                                Visibility="{Binding IsBanned, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="заблокирован" FontSize="11.5" Foreground="#FFB3BD" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding StatsText}" Style="{StaticResource TextCaption}"
+                                               Margin="1,9,0,0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                                    <Button x:Name="OpenPlayerButton" Style="{StaticResource BtnGhost}"
+                                            Click="OpenPlayer_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="{StaticResource IconPlay}" Width="13" Height="13"
+                                                  Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                            <TextBlock Text="К плееру" Margin="8,0,0,0" FontSize="12.5" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Height="1" Background="{DynamicResource HairlineBrush}" Margin="0,18,0,16" />
+
+                            <TextBlock Text="О себе" Style="{StaticResource FieldLabel}" />
+                            <TextBlock Text="{Binding Bio}" Style="{StaticResource TextBody}" TextWrapping="Wrap"
+                                       Margin="1,4,0,0" />
+
+                            <Grid Margin="0,18,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Зарегистрирован" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock Text="{Binding CreatedText}" Style="{StaticResource TextBody}" Margin="1,3,0,0" />
+                                    <TextBlock Text="Последний вход" Style="{StaticResource FieldLabel}" Margin="0,12,0,0" />
+                                    <TextBlock Text="{Binding LastLoginText}" Style="{StaticResource TextBody}" Margin="1,3,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Статистика" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock Text="{Binding LoginCountText}" Style="{StaticResource TextBody}" Margin="1,3,0,0" />
+                                    <TextBlock Text="{Binding StatsText}" Style="{StaticResource TextBody}" Margin="1,12,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- действия -->
+                            <TextBlock Text="Действия" Style="{StaticResource TextSection}" Margin="0,20,0,0" />
+                            <Border Style="{StaticResource Card}" Background="#0AFFFFFF" Padding="14" Margin="0,8,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Роль" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox x:Name="RoleBox" HorizontalAlignment="Left" Width="190"
+                                              SelectionChanged="Role_Changed">
+                                        <ComboBoxItem Content="Пользователь" Tag="0" />
+                                        <ComboBoxItem Content="Со-владелец" Tag="1" />
+                                        <ComboBoxItem Content="Владелец" Tag="2" />
+                                    </ComboBox>
+
+                                    <WrapPanel Margin="0,14,0,0">
+                                        <Button x:Name="BanButton" Style="{StaticResource BtnGhost}" Margin="0,0,8,8"
+                                                Click="Ban_Click" Content="Заблокировать" />
+                                        <Button x:Name="ResetButton" Style="{StaticResource BtnGhost}" Margin="0,0,8,8"
+                                                Click="ResetPassword_Click" Content="Сбросить пароль" />
+                                        <Button x:Name="DeleteButton" Style="{StaticResource BtnDanger}" Margin="0,0,8,8"
+                                                Click="Delete_Click" Content="Удалить аккаунт" />
+                                    </WrapPanel>
+
+                                    <TextBlock x:Name="PermissionHint" Style="{StaticResource TextCaption}"
+                                               TextWrapping="Wrap" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- журнал -->
+                            <TextBlock Text="Журнал действий" Style="{StaticResource TextSection}" Margin="0,20,0,0" />
+                            <ItemsControl x:Name="ActivityList" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,9">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Width="3" CornerRadius="2" Margin="0,2,12,2"
+                                                    Background="{DynamicResource AccentBorderBrush}" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Text}" Style="{StaticResource TextBody}"
+                                                           TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding At, StringFormat={}{0:dd.MM.yyyy HH:mm}}"
+                                                           Style="{StaticResource TextCaption}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

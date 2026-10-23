@@ -1,0 +1,70 @@
+<UserControl x:Class="VeriPlayer.Views.Panels.ProfilePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:VeriPlayer.Controls"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <ScrollViewer MaxHeight="640" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="26,4,26,24" Width="560">
+            <!-- профиль -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Width="140" HorizontalAlignment="Center">
+                    <controls:AvatarView x:Name="Avatar" Size="104" Ring="True" HorizontalAlignment="Center" />
+                    <Button Content="Сменить фото" Style="{StaticResource BtnGhost}" Margin="0,12,0,0"
+                            Click="ChangeAvatar_Click" Padding="12,7" FontSize="12" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="22,0,0,0">
+                    <TextBlock Text="Ник" Style="{StaticResource FieldLabel}" />
+                    <TextBox x:Name="NickBox" MaxLength="24" />
+
+                    <TextBlock Text="О себе" Style="{StaticResource FieldLabel}" Margin="0,14,0,6" />
+                    <TextBox x:Name="BioBox" MaxLength="180" AcceptsReturn="True" TextWrapping="Wrap"
+                             Height="82" VerticalContentAlignment="Top" />
+
+                    <Button Content="Сохранить профиль" Style="{StaticResource BtnPrimary}" HorizontalAlignment="Left"
+                            Margin="0,14,0,0" Click="SaveProfile_Click" />
+
+                    <TextBlock x:Name="MetaText" Style="{StaticResource TextCaption}" Margin="2,14,0,0" />
+                </StackPanel>
+            </Grid>
+
+            <Border Height="1" Background="{DynamicResource HairlineBrush}" Margin="0,20,0,18" />
+
+            <!-- пароль -->
+            <TextBlock Text="Смена пароля" Style="{StaticResource TextSection}" />
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                    <TextBlock Text="Текущий" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="OldPassword" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="8,0,8,0">
+                    <TextBlock Text="Новый" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="NewPassword" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Margin="8,0,0,0">
+                    <TextBlock Text="Повтор" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="ConfirmPassword" />
+                </StackPanel>
+            </Grid>
+            <Button Content="Изменить пароль" Style="{StaticResource BtnGhost}" HorizontalAlignment="Left"
+                    Margin="0,14,0,0" Click="ChangePassword_Click" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                <Button Content="Выйти из аккаунта" Style="{StaticResource BtnDanger}" Click="Logout_Click" />
+                <Button Content="Готово" Style="{StaticResource BtnPrimary}" Margin="10,0,0,0" Click="Done_Click" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,404 @@
+<Window x:Class="VeriPlayer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:VeriPlayer.Views"
+        xmlns:controls="clr-namespace:VeriPlayer.Controls"
+        Title="Veri Player"
+        Icon="/Assets/logo.png"
+        Width="1440" Height="900" MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#050509"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI Variable Display, Segoe UI, Arial"
+        FontSize="13.5"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="False"
+        SnapsToDevicePixels="True">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="SideListBoxItem" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="NavItemTemplate">
+            <Grid Margin="12,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Path Data="{Binding Icon}" Width="21" Height="21" Stretch="None" StrokeThickness="1.6"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="13,0,0,0" VerticalAlignment="Center"
+                           FontSize="13.5"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                <TextBlock Grid.Column="2" Text="{Binding CountText}" VerticalAlignment="Center" FontSize="11.5"
+                           Foreground="{DynamicResource TextFaintBrush}" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PlaylistItemTemplate">
+            <Grid Margin="12,9">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Path Data="{StaticResource IconWave}" Width="20" Height="20" Stretch="None" StrokeThickness="1.6"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="13,0,0,0" VerticalAlignment="Center"
+                           FontSize="13" TextTrimming="CharacterEllipsis"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                <TextBlock Grid.Column="2" Text="{Binding TrackIds.Count}" VerticalAlignment="Center" FontSize="11.5"
+                           Foreground="{DynamicResource TextFaintBrush}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid x:Name="Root">
+        <!-- ================= фон ================= -->
+        <Grid ClipToBounds="True">
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#07070D" Offset="0" />
+                        <GradientStop Color="#0B0A18" Offset="0.55" />
+                        <GradientStop Color="#05050A" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <Image x:Name="BackgroundImage" Stretch="UniformToFill"
+                   RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
+
+            <Rectangle x:Name="BackgroundVeil" Fill="#07070D" Opacity="0.55" />
+
+            <Canvas x:Name="AuroraLayer" IsHitTestVisible="False" Opacity="0.5">
+                <Ellipse Width="1000" Height="1000" Canvas.Left="-280" Canvas.Top="-420">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                    <Ellipse.RenderTransform>
+                        <TranslateTransform x:Name="Blob1" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse Width="820" Height="820" Canvas.Left="1180" Canvas.Top="-260">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="{DynamicResource AccentColor2}" Offset="0" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                    <Ellipse.RenderTransform>
+                        <TranslateTransform x:Name="Blob2" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Ellipse Width="900" Height="900" Canvas.Left="520" Canvas.Top="520">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                    <Ellipse.RenderTransform>
+                        <TranslateTransform x:Name="Blob3" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+            </Canvas>
+
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.5,0.45" RadiusX="0.85" RadiusY="0.85">
+                        <GradientStop Color="#00000000" Offset="0.45" />
+                        <GradientStop Color="#8C000000" Offset="1" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- клип на фоне песни (MP4, до 5 секунд) -->
+            <MediaElement x:Name="VideoBackground" Visibility="Collapsed" Stretch="UniformToFill"
+                          IsMuted="True" LoadedBehavior="Manual" UnloadedBehavior="Manual" Opacity="0.92"
+                          MediaEnded="VideoBackground_MediaEnded"
+                          MediaFailed="VideoBackground_MediaFailed" />
+        </Grid>
+
+        <controls:ParticleField x:Name="Particles" />
+
+        <!-- ================= содержимое ================= -->
+        <Grid x:Name="ContentRoot">
+            <views:AuthView x:Name="Auth" Visibility="Collapsed" />
+
+            <Grid x:Name="Shell" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="284" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- сайдбар -->
+                <Border Grid.Column="0" Background="{DynamicResource GlassBrush}" BorderBrush="{DynamicResource HairlineBrush}"
+                        BorderThickness="0,0,1,0">
+                    <Grid Margin="18,20,18,18">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="4,0,0,22">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="42" Height="42" CornerRadius="14" ClipToBounds="True">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.5"
+                                                      Color="Black" />
+                                </Border.Effect>
+                                <Image Source="/Assets/logo.png" Stretch="UniformToFill"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Veri Player" FontSize="17" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}" />
+                                <TextBlock Text="эстетичное пространство" FontSize="11"
+                                           Foreground="{DynamicResource TextFaintBrush}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Grid.Row="1">
+                            <TextBlock Text="КОЛЛЕКЦИЯ" Style="{StaticResource TextSection}" Margin="12,0,0,8" />
+                            <ListBox x:Name="NavList" ItemTemplate="{StaticResource NavItemTemplate}"
+                                     ItemContainerStyle="{StaticResource SideListBoxItem}"
+                                     SelectionChanged="NavList_SelectionChanged" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="2" Margin="0,20,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Margin="12,0,4,8">
+                                <TextBlock Text="ПЛЕЙЛИСТЫ" Style="{StaticResource TextSection}" VerticalAlignment="Center" />
+                                <Button x:Name="BtnNewPlaylist" Style="{StaticResource BtnIconSmall}" HorizontalAlignment="Right"
+                                        ToolTip="Создать плейлист" Click="BtnNewPlaylist_Click">
+                                    <Path Data="{StaticResource IconPlus}" Style="{StaticResource IconBase}" Width="16" Height="16" />
+                                </Button>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ListBox x:Name="PlaylistList" ItemTemplate="{StaticResource PlaylistItemTemplate}"
+                                         ItemContainerStyle="{StaticResource SideListBoxItem}"
+                                         SelectionChanged="PlaylistList_SelectionChanged" />
+                            </ScrollViewer>
+                        </Grid>
+
+                        <StackPanel Grid.Row="3" Margin="0,14,0,0">
+                            <Button x:Name="BtnAddMusicSide" Style="{StaticResource BtnPrimary}" Click="BtnAddMusic_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource IconPlus}" Width="18" Height="18" Stretch="None"
+                                          Stroke="#0B0B12" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    <TextBlock Text="Добавить музыку" FontWeight="SemiBold" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Button>
+
+                            <Border x:Name="UserCard" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="10,10,8,10"
+                                    Background="#12FFFFFF" MouseLeftButtonUp="UserCard_Click" Cursor="Hand">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:AvatarView x:Name="UserAvatar" Size="38" Ring="True" />
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock x:Name="UserName" FontSize="13.5" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="UserRole" FontSize="11" Foreground="{DynamicResource AccentTextBrush}" />
+                                    </StackPanel>
+                                    <Path Grid.Column="2" Data="{StaticResource IconChevronRight}" Style="{StaticResource IconBase}"
+                                          Width="18" Height="18" Stroke="{DynamicResource TextFaintBrush}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- правая часть -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="66" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" x:Name="TitleBar" Background="Transparent"
+                          MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="PageTitle" Text="Библиотека" Style="{StaticResource TextH2}"
+                                   VerticalAlignment="Center" Margin="26,0,0,0" />
+
+                        <Border Grid.Column="1" x:Name="SearchBox" Width="330" Height="40" CornerRadius="13"
+                                Background="#0EFFFFFF" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                                HorizontalAlignment="Left" Margin="26,0,0,0" VerticalAlignment="Center"
+                                WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Path Data="{StaticResource IconSearch}" Style="{StaticResource IconBase}" Width="18" Height="18"
+                                      Stroke="{DynamicResource TextFaintBrush}" Margin="12,0,0,0" />
+                                <TextBox x:Name="SearchInput" Grid.Column="1" BorderThickness="0" Background="Transparent"
+                                         Padding="8,0,12,0" VerticalContentAlignment="Center" VerticalAlignment="Center"
+                                         TextChanged="SearchInput_TextChanged" />
+                                <TextBlock x:Name="SearchPlaceholder" Text="Поиск по названию, исполнителю, альбому…"
+                                           Foreground="{DynamicResource TextFaintBrush}" FontSize="12.5"
+                                           VerticalAlignment="Center" Margin="8,0,12,0" IsHitTestVisible="False"
+                                           Panel.ZIndex="2" />
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button Style="{StaticResource BtnIcon}" ToolTip="Эффекты фона" Click="BtnEffects_Click">
+                                <Path Data="{StaticResource IconSparkle}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{StaticResource BtnIcon}" ToolTip="RGB-выбор цвета" Click="BtnTheme_Click">
+                                <Path Data="{StaticResource IconPalette}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{StaticResource BtnIcon}" ToolTip="Мой фон" Click="BtnBackground_Click">
+                                <Path Data="{StaticResource IconImage}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{StaticResource BtnIcon}" ToolTip="Spotify и другие сервисы" Click="BtnServices_Click">
+                                <Path Data="{StaticResource IconSpotify}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button x:Name="BtnAdmin" Style="{StaticResource BtnIcon}" ToolTip="Панель владельца" Visibility="Collapsed"
+                                    Click="BtnAdmin_Click">
+                                <Path Data="{StaticResource IconShield}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{StaticResource BtnIcon}" ToolTip="Настройки" Click="BtnSettings_Click">
+                                <Path Data="{StaticResource IconGear}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+
+                            <Border Width="1" Background="{DynamicResource HairlineBrush}" Margin="8,10" />
+
+                            <Button Style="{StaticResource BtnWin}" Click="BtnMinimize_Click" ToolTip="Свернуть">
+                                <Path Data="{StaticResource IconMinimize}" Style="{StaticResource IconBase}" Width="20" Height="20"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button x:Name="BtnMaximize" Style="{StaticResource BtnWin}" Click="BtnMaximize_Click" ToolTip="Развернуть">
+                                <Path Data="{StaticResource IconMaximize}" Style="{StaticResource IconBase}" Width="18" Height="18"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{StaticResource BtnWinClose}" Click="BtnClose_Click" ToolTip="Закрыть">
+                                <Path Data="{StaticResource IconClose}" Style="{StaticResource IconBase}" Width="18" Height="18"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <ContentControl x:Name="ContentHost" Grid.Row="1" />
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ================= модальные окна ================= -->
+        <Grid x:Name="OverlayHost" Visibility="Collapsed">
+            <Rectangle x:Name="OverlayDim" Fill="#C7040408" MouseLeftButtonDown="OverlayDim_MouseDown" />
+            <Border x:Name="OverlayCard" Style="{StaticResource GlassPanel}" Margin="40"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MaxHeight="820"
+                    Opacity="0" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="OverlayScale" ScaleX="0.96" ScaleY="0.96" />
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="60" ShadowDepth="10" Opacity="0.7" Color="Black" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="26,20,18,6">
+                        <TextBlock x:Name="OverlayTitle" Style="{StaticResource TextH3}" VerticalAlignment="Center" />
+                        <Button x:Name="OverlayClose" Style="{StaticResource BtnIconSmall}" HorizontalAlignment="Right"
+                                Click="OverlayClose_Click" ToolTip="Закрыть">
+                            <Path Data="{StaticResource IconClose}" Style="{StaticResource IconBase}" Width="16" Height="16"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                    </Grid>
+                    <ContentControl x:Name="OverlayBody" Grid.Row="1" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================= обложка на весь экран ================= -->
+        <Grid x:Name="CoverOverlay" Background="#F5040408" Visibility="Collapsed"
+              MouseLeftButtonDown="CoverOverlay_MouseDown">
+            <Image x:Name="CoverFullImage" Stretch="UniformToFill" />
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                        <GradientStop Color="#B3000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="0.3" />
+                        <GradientStop Color="#00000000" Offset="0.62" />
+                        <GradientStop Color="#C7000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,26,0,0"
+                        IsHitTestVisible="False">
+                <TextBlock x:Name="CoverFullTitle" Style="{StaticResource TextH3}" HorizontalAlignment="Center" />
+                <TextBlock x:Name="CoverFullArtist" Style="{StaticResource TextMuted}" HorizontalAlignment="Center"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+
+            <Border x:Name="CoverFullHint" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,30" Style="{StaticResource SoftChip}" IsHitTestVisible="False">
+                <TextBlock Text="Нажмите в любом месте или Esc, чтобы закрыть" FontSize="12"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+            </Border>
+
+            <Button Style="{StaticResource BtnIcon}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="22" Click="CoverFullClose_Click" ToolTip="Закрыть">
+                <Path Data="{StaticResource IconClose}" Style="{StaticResource IconBase}" Width="20" Height="20" />
+            </Button>
+        </Grid>
+
+        <!-- ================= уведомления ================= -->
+        <StackPanel x:Name="ToastHost" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,30"
+                    IsHitTestVisible="False" />
+    </Grid>
+</Window>

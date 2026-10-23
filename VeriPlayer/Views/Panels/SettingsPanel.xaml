@@ -1,0 +1,73 @@
+<UserControl x:Class="VeriPlayer.Views.Panels.SettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <ScrollViewer MaxHeight="640" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="26,4,26,24" Width="580">
+            <TextBlock Text="Библиотека" Style="{StaticResource TextSection}" />
+            <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
+                <StackPanel>
+                    <TextBlock Text="Сортировка по умолчанию" Style="{StaticResource FieldLabel}" />
+                    <ComboBox x:Name="SortBox" SelectionChanged="Sort_Changed" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Недавно добавленные" Tag="added" />
+                        <ComboBoxItem Content="По названию" Tag="title" />
+                        <ComboBoxItem Content="По исполнителю" Tag="artist" />
+                        <ComboBoxItem Content="По альбому" Tag="album" />
+                        <ComboBoxItem Content="По длительности" Tag="duration" />
+                        <ComboBoxItem Content="По прослушиваниям" Tag="plays" />
+                    </ComboBox>
+
+                    <CheckBox x:Name="CopyToggle" Content="Копировать файлы в папку программы"
+                              Margin="0,16,0,0" Click="Copy_Click" />
+                    <TextBlock Text="Резервные копии хранятся в папке данных Veri Player."
+                               Style="{StaticResource TextCaption}" Margin="2,6,0,0" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Style="{StaticResource BtnGhost}" Click="OpenData_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource IconFolder}" Width="17" Height="17" Stretch="None"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                      StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" />
+                                <TextBlock Text="Открыть папку данных" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <TextBlock x:Name="LibraryStats" Style="{StaticResource TextCaption}" Margin="2,14,0,0" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Внешний вид и движение" Style="{StaticResource TextSection}" Margin="0,22,0,0" />
+            <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
+                <StackPanel>
+                    <CheckBox x:Name="MotionToggle" Content="Уменьшить движение (спокойный фон)"
+                              Click="Motion_Click" />
+                    <CheckBox x:Name="VisualizerToggle" Content="Показывать спектр звука" Margin="0,12,0,0"
+                              Click="Visualizer_Click" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Горячие клавиши" Style="{StaticResource TextSection}" Margin="0,22,0,0" />
+            <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
+                <Grid x:Name="Hotkeys" />
+            </Border>
+
+            <TextBlock Text="О программе" Style="{StaticResource TextSection}" Margin="0,22,0,0" />
+            <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
+                <StackPanel>
+                    <TextBlock x:Name="AboutText" Style="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="0,10,0,0"
+                               Text="Spotify подключается по вашему Client ID (в разделе «Сервисы»). Воспроизведение музыки сторонних сервисов возможно только в самих этих сервисах — Veri Player играет ваши файлы." />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                <Button Content="Выйти из аккаунта" Style="{StaticResource BtnDanger}" Click="Logout_Click" />
+                <Button Content="Готово" Style="{StaticResource BtnPrimary}" Margin="10,0,0,0" Click="Done_Click" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

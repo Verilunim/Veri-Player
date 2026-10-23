@@ -30,6 +30,10 @@ namespace VeriPlayer.Models
         /// <summary>Неудачные попытки входа подряд и время, до которого вход заблокирован.</summary>
         public int FailedLogins { get; set; }
         public DateTime LockoutUntil { get; set; }
+        /// <summary>Активированный ключ Pro+ (проверяется подписью при каждом запуске).</summary>
+        public string ProKey { get; set; } = "";
+        /// <summary>Самое позднее время, которое видела программа: перевод часов назад не продлевает Pro+.</summary>
+        public DateTime LicenseSeenUtc { get; set; }
         public string Bio { get; set; } = "";
         public string AvatarPath { get; set; } = "";
         public UserRole Role { get; set; } = UserRole.User;

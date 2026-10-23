@@ -204,6 +204,7 @@ namespace VeriPlayer.Services
 
             user.LastLoginAt = DateTime.Now;
             user.LoginCount++;
+            LicenseService.Touch(user);
             LogActivity(user, "login", "Вход в систему");
             Current = user;
             Save();

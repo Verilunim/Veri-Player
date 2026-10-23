@@ -916,4 +916,28 @@
         </Style.Triggers>
     </Style>
 
+    <!-- ============================================================== Pro+ -->
+    <!-- Значок замка поверх кнопки функции, недоступной без Pro+ -->
+    <Style x:Key="ProLockBadge" TargetType="ContentControl">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="0,-5,-7,0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Visibility" Value="Collapsed" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border CornerRadius="7" Background="{DynamicResource AccentGradientBrush}">
+                        <Path Data="{StaticResource IconLock}" Width="8" Height="8" Stretch="Uniform" Stroke="White"
+                              StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

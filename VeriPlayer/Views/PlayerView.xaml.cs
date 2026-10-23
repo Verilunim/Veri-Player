@@ -343,20 +343,21 @@ namespace VeriPlayer.Views
             {
                 MainWindow.Instance?.ShowPanel(new VeriPlayer.Views.Panels.ShareTrackPanel(row.Track));
             }));
-            menu.Items.Add(Item("Изменить информацию…", () =>
+            menu.Items.Add(Item(Pro("Изменить информацию…"), () =>
             {
-                MainWindow.Instance?.ShowPanel(new VeriPlayer.Views.Panels.TrackEditPanel(row.Track));
+                if (MainWindow.Instance?.RequirePro("Редактирование песен") == true)
+                    MainWindow.Instance.ShowPanel(new VeriPlayer.Views.Panels.TrackEditPanel(row.Track));
             }));
 
             var track = row.Track;
-            menu.Items.Add(Item(track.HasCover ? "Заменить обложку…" : "Добавить обложку…",
+            menu.Items.Add(Item(Pro(track.HasCover ? "Заменить обложку…" : "Добавить обложку…"),
                 () => MainWindow.Instance?.PickCover(track)));
             if (track.HasCover)
             {
                 menu.Items.Add(Item("Обложка на весь экран", () => MainWindow.Instance?.ShowCoverFullscreen(track)));
                 menu.Items.Add(Item("Убрать обложку", () => MainWindow.Instance?.ClearCover(track)));
             }
-            menu.Items.Add(Item(track.HasVideo ? "Заменить клип на фон…" : "Прикрепить клип на фон (MP4, до 5 с)…",
+            menu.Items.Add(Item(Pro(track.HasVideo ? "Заменить клип на фон…" : "Прикрепить клип на фон (MP4, до 5 с)…"),
                 () => MainWindow.Instance?.PickClip(track)));
             if (track.HasVideo)
                 menu.Items.Add(Item("Убрать клип", () => MainWindow.Instance?.ClearClip(track)));
@@ -409,6 +410,17 @@ namespace VeriPlayer.Views
             if (index < 0) index = 0;
             if (!AudioService.Queue.Contains(track)) AudioService.Queue.Insert(index + 1, track);
             MainWindow.Instance?.ShowToast("Играет следующим: " + track.DisplayTitle, "info");
+        }
+
+        /// <summary>Подпись пункта меню: без Pro+ помечаем, что функция платная.</summary>
+        private static string Pro(string header) => LicenseService.IsProCurrent ? header : header + "   🔒 Pro+";
+
+        /// <summary>Замки на кнопках обложки и клипа.</summary>
+        public void RefreshProLocks()
+        {
+            var visibility = LicenseService.IsProCurrent ? Visibility.Collapsed : Visibility.Visible;
+            LockCover.Visibility = visibility;
+            LockClip.Visibility = visibility;
         }
 
         private static MenuItem Item(string header, Action action)

@@ -50,6 +50,8 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding Nick}" FontSize="13.5" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextBrush}" />
+                        <TextBlock Style="{StaticResource ProPlusMark}" FontSize="15"
+                                   Visibility="{Binding IsPro, Converter={StaticResource BoolToVis}}" />
                         <Border x:Name="BanChip" Background="#26FF5A6E" CornerRadius="999" Padding="7,1"
                                 Margin="8,0,0,0" VerticalAlignment="Center"
                                 Visibility="{Binding IsBanned, Converter={StaticResource BoolToVis}}">
@@ -147,8 +149,15 @@
                                                      Source="{Binding AvatarPath}" Initial="{Binding Initial}" />
 
                                 <StackPanel Grid.Column="1" Margin="18,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Nick}" Style="{StaticResource TextH2}"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Nick}" Style="{StaticResource TextH2}"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="380" />
+                                        <TextBlock Style="{StaticResource ProPlusMark}" FontSize="22" Margin="6,-3,0,0"
+                                                   Visibility="{Binding IsPro, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ProText}" Style="{StaticResource TextCaption}" Margin="1,5,0,0"
+                                               Foreground="{StaticResource GoldBrush}"
+                                               Visibility="{Binding IsPro, Converter={StaticResource BoolToVis}}" />
                                     <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
                                         <Border Style="{StaticResource SoftChip}">
                                             <TextBlock Text="{Binding RoleLabel}" FontSize="11.5"
@@ -170,6 +179,14 @@
                                             <Path Data="{StaticResource IconPlay}" Width="13" Height="13"
                                                   Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                                             <TextBlock Text="К плееру" Margin="8,0,0,0" FontSize="12.5" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource BtnGhost}" Margin="0,8,0,0" Click="IssueKey_Click"
+                                            ToolTip="Выпустить ключ Pro+ для этого пользователя">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource ProPlusMark}" FontSize="15" Margin="0,-3,0,0"
+                                                       ToolTip="{x:Null}" />
+                                            <TextBlock Text="Ключ Pro+" Margin="6,0,0,0" FontSize="12.5" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>

@@ -236,8 +236,16 @@
                                     </Grid.ColumnDefinitions>
                                     <controls:AvatarView x:Name="UserAvatar" Size="38" Ring="True" />
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock x:Name="UserName" FontSize="13.5" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" MaxWidth="150" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="UserName" FontSize="13.5" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="UserProMark" Grid.Column="1" Style="{StaticResource ProPlusMark}"
+                                                       FontSize="16" Visibility="Collapsed" />
+                                        </Grid>
                                         <TextBlock x:Name="UserRole" FontSize="11" Foreground="{DynamicResource AccentTextBrush}" />
                                     </StackPanel>
                                     <Path Grid.Column="2" Data="{StaticResource IconChevronRight}" Style="{StaticResource IconBase}"

@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using VeriPlayer.Models;
 
@@ -77,11 +81,154 @@ namespace VeriPlayer.Services
                 return (false, "Срок действия этого ключа уже закончился.");
 
             user.ProKey = string.Concat(key.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+            // приветствие покажем один раз — при следующем запуске программы
+            user.ProWelcomePending = true;
             Touch(user);
             AuthService.LogActivity(user, "pro", "Активирован Pro+ (ключ " + payload.i + ")");
             AuthService.Save();
             Changed?.Invoke();
             return (true, null);
+        }
+
+        /// <summary>Показать приветствие Pro+ сейчас? Возвращает true один раз после активации.</summary>
+        public static bool TakeWelcome(UserAccount user)
+        {
+            if (user == null || !user.ProWelcomePending) return false;
+            user.ProWelcomePending = false;
+            AuthService.Save();
+            return For(user).Active;
+        }
+
+        // ================================================================== выпуск ключей (команда)
+
+        /// <summary>Где утилита VeriKeygen хранит закрытый ключ по умолчанию.</summary>
+        public static string DefaultPrivateKeyPath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".veriplayer", "license-private.pem");
+
+        public static string IssuedFile => Path.Combine(Storage.Root, "issued-keys.json");
+
+        public sealed class IssuedKey
+        {
+            public string Id { get; set; } = "";
+            public string Nick { get; set; } = "";
+            /// <summary>Последний день (yyyy-MM-dd) или пусто — бессрочно.</summary>
+            public string LastDay { get; set; } = "";
+            public DateTime IssuedAt { get; set; } = DateTime.Now;
+            public string IssuedBy { get; set; } = "";
+            public string Key { get; set; } = "";
+
+            public string TermText => LastDay.Length == 0 ? "бессрочно"
+                : "по " + DateTime.ParseExact(LastDay, "yyyy-MM-dd", CultureInfo.InvariantCulture).ToString("dd.MM.yyyy");
+
+            public string Line => IssuedAt.ToString("dd.MM.yyyy HH:mm") + "  ·  " + Nick + "  ·  " + TermText + "  ·  №" + Id;
+        }
+
+        private static bool CanIssue => AuthService.Current?.IsStaff == true;
+
+        /// <summary>
+        /// Загружает закрытый ключ и проверяет, что он парный ключу, вшитому в программу:
+        /// иначе выданные им ключи не прошли бы проверку.
+        /// </summary>
+        public static (ECDsa signer, string error) LoadSigner(string path)
+        {
+            if (!CanIssue) return (null, "Выпуск ключей доступен только владельцу и со-владельцу.");
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return (null, "Файл закрытого ключа не найден. Создайте его командой «VeriKeygen init» или выберите файл.");
+            try
+            {
+                var ecdsa = ECDsa.Create();
+                ecdsa.ImportFromPem(File.ReadAllText(path));
+                if (!ecdsa.ExportSubjectPublicKeyInfo().SequenceEqual(Convert.FromBase64String(PublicKey)))
+                {
+                    ecdsa.Dispose();
+                    return (null, "Этот закрытый ключ не подходит к программе: подписанные им ключи не пройдут проверку.");
+                }
+                return (ecdsa, null);
+            }
+            catch (Exception ex)
+            {
+                return (null, "Не удалось прочитать закрытый ключ: " + ex.Message);
+            }
+        }
+
+        /// <param name="lastDay">Последний день действия (включительно) или null — бессрочно.</param>
+        public static (string key, string error) Issue(ECDsa signer, string nick, DateTime? lastDay)
+        {
+            if (!CanIssue) return (null, "Выпуск ключей доступен только владельцу и со-владельцу.");
+            if (signer == null) return (null, "Сначала укажите файл закрытого ключа.");
+            nick = (nick ?? "").Trim();
+            if (nick.Length == 0) return (null, "Укажите ник пользователя.");
+            if (lastDay != null && lastDay.Value.Date < DateTime.UtcNow.Date)
+                return (null, "Дата окончания уже прошла.");
+
+            var payload = new LicenseFormat.Payload
+            {
+                n = nick,
+                e = lastDay?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "",
+                i = Guid.NewGuid().ToString("N").Substring(0, 12),
+                t = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            };
+            var key = LicenseFormat.Sign(payload, signer);
+
+            var entry = new IssuedKey
+            {
+                Id = payload.i,
+                Nick = nick,
+                LastDay = payload.e,
+                IssuedBy = AuthService.Current?.Nick ?? "",
+                Key = key
+            };
+            var issued = LoadIssued();
+            issued.Insert(0, entry);
+            Storage.SaveProtected(IssuedFile, issued);
+            AuthService.LogActivity("pro", "Выпущен ключ Pro+ для «" + nick + "» (" + entry.TermText + ", №" + payload.i + ")");
+            return (key, null);
+        }
+
+        public static List<IssuedKey> LoadIssued() =>
+            Storage.LoadProtected(IssuedFile, new List<IssuedKey>()) ?? new List<IssuedKey>();
+
+        public sealed class KeyInfo
+        {
+            public bool Genuine;
+            public string Nick = "";
+            public string Id = "";
+            public DateTime? Issued;
+            public DateTime? LastDay;
+            public bool Expired;
+
+            public string Text
+            {
+                get
+                {
+                    if (!Genuine) return "Ключ поддельный или повреждён: подпись не совпадает.";
+                    var term = LastDay == null ? "бессрочно" : "по " + LastDay.Value.ToString("dd.MM.yyyy") + " включительно";
+                    var state = Expired ? "срок истёк"
+                        : LastDay == null ? "действует"
+                        : "действует, осталось дней: " + Math.Max(1, (int)(LastDay.Value.AddDays(1) - DateTime.UtcNow.Date).TotalDays);
+                    return "Ник: " + Nick + "\nСрок: " + term + " — " + state +
+                           (Issued != null ? "\nВыпущен: " + Issued.Value.ToString("dd.MM.yyyy") : "") +
+                           "\nНомер: " + Id;
+                }
+            }
+        }
+
+        /// <summary>Разбирает любой ключ: для кого он, до какого числа и настоящий ли.</summary>
+        public static KeyInfo Inspect(string key)
+        {
+            if (!CanIssue || !LicenseFormat.TryVerify(key, Verifier, out var payload)) return new KeyInfo();
+            var end = payload.ExpiresUtc;
+            DateTime? issued = DateTime.TryParseExact(payload.t, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var t) ? t : (DateTime?)null;
+            return new KeyInfo
+            {
+                Genuine = true,
+                Nick = payload.n,
+                Id = payload.i,
+                Issued = issued,
+                LastDay = end?.AddDays(-1).Date,
+                Expired = end != null && DateTime.UtcNow >= end.Value
+            };
         }
 
         private static ECDsa CreateVerifier()

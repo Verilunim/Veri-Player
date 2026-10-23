@@ -119,5 +119,7 @@ namespace VeriPlayer.Views
         public string CreatedText => User.CreatedText;
         public string LastLoginText => User.LastLoginText;
         public string LoginCountText => User.LoginCount + " входов";
+        public bool IsPro => LicenseService.For(User).Active;
+        public string ProText => LicenseService.For(User).Text;
     }
 }

@@ -5,7 +5,7 @@ using VeriPlayer.Services;
 
 namespace VeriPlayer.Views.Panels
 {
-    /// <summary>Статус Pro+ и активация ключа. Открывается и по клику на закрытую функцию.</summary>
+    /// <summary>Статус Pro+ и что в него входит. Открывается и по клику на закрытую функцию.</summary>
     public partial class ProPanel : UserControl, IModalPanel
     {
         public event EventHandler CloseRequested;
@@ -34,28 +34,24 @@ namespace VeriPlayer.Views.Panels
             var status = LicenseService.For(AuthService.Current);
             StatusText.Text = status.Text;
 
-            // активному пользователю поле ключа нужно только для продления подписки
-            bool showActivate = !status.ByRole;
-            ActivateBlock.Visibility = showActivate ? Visibility.Visible : Visibility.Collapsed;
-            ActivateButton.Visibility = showActivate ? Visibility.Visible : Visibility.Collapsed;
-            ActivateButton.Content = status.Active ? "Продлить" : "Активировать";
+            // команде ключ не нужен — вместо активации она выпускает ключи; подписчику — только для продления
+            HowTo.Visibility = !status.ByRole && !status.Active ? Visibility.Visible : Visibility.Collapsed;
+            ActivateButton.Content = status.ByRole ? "Выпустить ключи Pro+"
+                : status.Active ? "Продлить ключом" : "Ввести ключ активации";
+            if (status.Active) FeatureHint.Visibility = Visibility.Collapsed;
         }
 
         private void Activate_Click(object sender, RoutedEventArgs e)
         {
-            var (ok, error) = LicenseService.Activate(AuthService.Current, KeyInput.Text);
-            if (!ok)
+            if (LicenseService.For(AuthService.Current).ByRole)
             {
-                ErrorText.Text = error;
-                ErrorRow.Visibility = Visibility.Visible;
+                KeyGeneratorWindow.Open(Window.GetWindow(this));
+                CloseRequested?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
-            ErrorRow.Visibility = Visibility.Collapsed;
-            KeyInput.Clear();
-            FeatureHint.Visibility = Visibility.Collapsed;
+            new ProActivationWindow { Owner = Window.GetWindow(this) }.ShowDialog();
             Refresh();
-            MainWindow.Instance?.ShowToast(LicenseService.For(AuthService.Current).Text, "ok");
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);

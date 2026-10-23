@@ -1,0 +1,53 @@
+<UserControl x:Class="VeriPlayer.Views.Panels.ProWelcomePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <StackPanel Margin="30,6,30,26" Width="440">
+        <!-- большой золотой плюс -->
+        <Grid Width="92" Height="92" HorizontalAlignment="Center">
+            <Ellipse Fill="#1FFFD45C" Stroke="#66FFD45C" StrokeThickness="1.5" />
+            <TextBlock x:Name="Plus" Style="{StaticResource ProPlusMark}" FontSize="64" Margin="0,-10,0,0"
+                       HorizontalAlignment="Center" ToolTip="{x:Null}" RenderTransformOrigin="0.5,0.55">
+                <TextBlock.RenderTransform>
+                    <ScaleTransform x:Name="PlusScale" ScaleX="0.4" ScaleY="0.4" />
+                </TextBlock.RenderTransform>
+            </TextBlock>
+        </Grid>
+
+        <TextBlock x:Name="Headline" Style="{StaticResource TextH1}" FontSize="24" TextAlignment="Center"
+                   TextWrapping="Wrap" Margin="0,18,0,0" />
+        <TextBlock x:Name="StatusText" Foreground="{StaticResource GoldBrush}" FontWeight="SemiBold"
+                   TextAlignment="Center" Margin="0,8,0,0" />
+        <TextBlock Style="{StaticResource TextMuted}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0"
+                   Text="Спасибо за поддержку Veri Player! Теперь вам открыто всё:" />
+
+        <Border Margin="0,16,0,0" Padding="16,14" CornerRadius="14" Background="#14FFFFFF"
+                BorderBrush="#1FFFFFFF" BorderThickness="1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,9">
+                    <Path Data="{StaticResource IconEdit}" Style="{StaticResource IconBase}" Width="17" Height="17"
+                          Stroke="{StaticResource GoldBrush}" />
+                    <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0"
+                               Text="Названия, обложки и клипы песен" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,9">
+                    <Path Data="{StaticResource IconPalette}" Style="{StaticResource IconBase}" Width="17" Height="17"
+                          Stroke="{StaticResource GoldBrush}" />
+                    <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0"
+                               Text="RGB-цвета, эффекты и свой фон" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconWand}" Style="{StaticResource IconBase}" Width="17" Height="17"
+                          Stroke="{StaticResource GoldBrush}" />
+                    <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0"
+                               Text="Создание музыки с AI" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Button Content="Начать" Style="{StaticResource BtnPrimary}" Height="42" Margin="0,22,0,0"
+                Click="Close_Click" />
+    </StackPanel>
+</UserControl>

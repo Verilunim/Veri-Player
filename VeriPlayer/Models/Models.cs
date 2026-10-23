@@ -34,6 +34,8 @@ namespace VeriPlayer.Models
         public string ProKey { get; set; } = "";
         /// <summary>Самое позднее время, которое видела программа: перевод часов назад не продлевает Pro+.</summary>
         public DateTime LicenseSeenUtc { get; set; }
+        /// <summary>Ключ активирован, приветствие Pro+ ещё не показано (покажется один раз при запуске).</summary>
+        public bool ProWelcomePending { get; set; }
         public string Bio { get; set; } = "";
         public string AvatarPath { get; set; } = "";
         public UserRole Role { get; set; } = UserRole.User;
@@ -213,6 +215,10 @@ namespace VeriPlayer.Models
         
         // ---- AI music generation ----
         public string SunoApiKey { get; set; } = "";
+
+        // ---- Pro+ (только для команды) ----
+        /// <summary>Путь к закрытому ключу подписи, если он лежит не на месте по умолчанию.</summary>
+        public string LicensePrivateKeyPath { get; set; } = "";
     }
 
     public class SpotifyToken

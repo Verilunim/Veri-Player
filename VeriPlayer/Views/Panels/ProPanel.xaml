@@ -47,25 +47,11 @@
             </StackPanel>
         </Border>
 
-        <StackPanel x:Name="ActivateBlock">
-            <TextBlock Text="Ключ активации" Style="{StaticResource FieldLabel}" Margin="2,18,0,6" />
-            <TextBox x:Name="KeyInput" Height="70" TextWrapping="Wrap" AcceptsReturn="False"
-                     VerticalContentAlignment="Top" FontFamily="Consolas" FontSize="11.5" />
-            <TextBlock x:Name="HowTo" Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="2,8,0,0" />
-
-            <StackPanel x:Name="ErrorRow" Orientation="Horizontal" Margin="2,12,0,0" Visibility="Collapsed">
-                <Path Data="{StaticResource IconInfo}" Width="16" Height="16" Stretch="None"
-                      Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.7"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                      VerticalAlignment="Top" Margin="0,1,0,0" />
-                <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12.5"
-                           TextWrapping="Wrap" Margin="8,0,0,0" MaxWidth="400" />
-            </StackPanel>
-        </StackPanel>
+        <TextBlock x:Name="HowTo" Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="2,14,0,0" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
             <Button x:Name="CloseButton" Content="Закрыть" Style="{StaticResource BtnGhost}" Click="Close_Click" />
-            <Button x:Name="ActivateButton" Content="Активировать" Style="{StaticResource BtnPrimary}"
+            <Button x:Name="ActivateButton" Content="Ввести ключ активации" Style="{StaticResource BtnPrimary}"
                     Margin="10,0,0,0" Click="Activate_Click" />
         </StackPanel>
     </StackPanel>

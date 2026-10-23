@@ -122,6 +122,10 @@ namespace VeriPlayer
 
             RefreshPro();
             RefreshAll();
+
+            // один раз после активации ключа — при первом запуске программы
+            if (LicenseService.TakeWelcome(AuthService.Current))
+                Dispatcher.BeginInvoke(new Action(() => ShowPanel(new ProWelcomePanel())), DispatcherPriority.Loaded);
             ShowToast("Добро пожаловать, " + AuthService.Current.Nick + "!", "ok");
         }
 
@@ -310,6 +314,7 @@ namespace VeriPlayer
             LockTheme.Visibility = lockVisibility;
             LockBackground.Visibility = lockVisibility;
             foreach (var item in _nav) item.Locked = !pro && item.Tag == "generate";
+            UserProMark.Visibility = pro ? Visibility.Visible : Visibility.Collapsed;
 
             ApplyAppearance();
             UpdateBackgroundVideo();

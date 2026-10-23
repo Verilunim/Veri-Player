@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,6 +14,8 @@ namespace VeriPlayer.Views
         private string _avatarSource;
         private bool _loginMode = true;
         private bool _ownerSetup;
+        /// <summary>Нет ни одного аккаунта с паролем — вкладка «Вход» не нужна.</summary>
+        private bool _setupOnly;
 
         public event Action<UserAccount> Authenticated;
 
@@ -34,8 +37,9 @@ namespace VeriPlayer.Views
             LoginNick.Clear();
             LoginPassword.Clear();
             ApplyOwnerSetup();
-            if (_ownerSetup) ShowLogin(false, false);
-            else LoginNick.Focus();
+            ChangePanel.Visibility = Visibility.Collapsed;
+            if (_setupOnly) ShowLogin(false, false);
+            else ShowLogin(true, false);
         }
 
         // ------------------------------------------------------------------ первый запуск
@@ -45,9 +49,11 @@ namespace VeriPlayer.Views
         {
             _ownerSetup = AuthService.NeedsOwnerSetup;
             var pending = _ownerSetup ? AuthService.PendingOwner : null;
+            // в другие аккаунты можно войти всегда, даже пока владелец не настроен
+            _setupOnly = _ownerSetup && !AuthService.Users.Any(u => !string.IsNullOrEmpty(u.PasswordHash));
 
-            TabHost.Visibility = _ownerSetup ? Visibility.Collapsed : Visibility.Visible;
-            RegLoginLink.Visibility = _ownerSetup ? Visibility.Collapsed : Visibility.Visible;
+            TabHost.Visibility = _setupOnly ? Visibility.Collapsed : Visibility.Visible;
+            RegLoginLink.Visibility = _setupOnly ? Visibility.Collapsed : Visibility.Visible;
             RegTitle.Text = _ownerSetup ? "Первый запуск" : "Создать аккаунт";
             RegSubtitle.Text = pending != null
                 ? "Задайте новый пароль для владельца «" + pending.Nick + "». Стандартный пароль больше не действует."
@@ -71,7 +77,7 @@ namespace VeriPlayer.Views
 
         private void ShowLogin(bool login, bool animate = true)
         {
-            if (_ownerSetup) login = false;
+            if (_setupOnly) login = false;
             _loginMode = login;
             LoginPanel.Visibility = login ? Visibility.Visible : Visibility.Collapsed;
             RegisterPanel.Visibility = login ? Visibility.Collapsed : Visibility.Visible;
@@ -155,7 +161,59 @@ namespace VeriPlayer.Views
                 return;
             }
             LoginError.Visibility = Visibility.Collapsed;
+
+            if (user.MustChangePassword)
+            {
+                ShowChange(user);
+                return;
+            }
             Authenticated?.Invoke(user);
+        }
+
+        // ------------------------------------------------------------------ обязательная смена пароля
+
+        private void ShowChange(UserAccount user)
+        {
+            LoginPanel.Visibility = Visibility.Collapsed;
+            RegisterPanel.Visibility = Visibility.Collapsed;
+            TabHost.Visibility = Visibility.Collapsed;
+            ChangePanel.Visibility = Visibility.Visible;
+            ChangeError.Visibility = Visibility.Collapsed;
+            ChangePassword1.Clear();
+            ChangePassword2.Clear();
+            ChangeSubtitle.Text = "Сейчас у «" + user.Nick + "» стандартный пароль, равный нику, — его знает кто угодно. " +
+                                  "Придумайте новый" + (user.IsStaff ? " (минимум " + AuthService.MinStaffPasswordLength + " символов)" : "") +
+                                  ", чтобы продолжить.";
+            ChangePassword1.Focus();
+        }
+
+        private void BtnChange_Click(object sender, RoutedEventArgs e)
+        {
+            var user = AuthService.Current;
+            var error = AuthService.CompleteRequiredChange(user, ChangePassword1.Password, ChangePassword2.Password);
+            if (error != null)
+            {
+                ShowError(ChangeError, ChangeErrorText, error);
+                return;
+            }
+
+            ChangePanel.Visibility = Visibility.Collapsed;
+            TabHost.Visibility = Visibility.Visible;
+            Authenticated?.Invoke(user);
+        }
+
+        private void ChangeCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // без нового пароля в аккаунт не пускаем
+            AuthService.Logout();
+            ChangePanel.Visibility = Visibility.Collapsed;
+            Prepare();
+            ShowLogin(true, false);
+        }
+
+        private void ChangePassword_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter) BtnChange_Click(sender, new RoutedEventArgs());
         }
 
         // ------------------------------------------------------------------ регистрация

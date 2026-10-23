@@ -28,6 +28,8 @@ namespace VeriPlayer.Models
         public string PasswordSalt { get; set; } = "";
         public int PasswordIterations { get; set; } = 120000;
         /// <summary>Неудачные попытки входа подряд и время, до которого вход заблокирован.</summary>
+        /// <summary>После входа нужно сразу задать новый пароль (стандартный «пароль = ник»).</summary>
+        public bool MustChangePassword { get; set; }
         public int FailedLogins { get; set; }
         public DateTime LockoutUntil { get; set; }
         /// <summary>Активированный ключ Pro+ (проверяется подписью при каждом запуске).</summary>

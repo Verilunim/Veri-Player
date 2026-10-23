@@ -212,6 +212,34 @@
                                 </TextBlock>
                             </StackPanel>
                         </ScrollViewer>
+
+                        <!-- обязательная смена стандартного пароля -->
+                        <StackPanel x:Name="ChangePanel" Visibility="Collapsed">
+                            <TextBlock Text="Смените пароль" Style="{StaticResource TextH1}" FontSize="26" />
+                            <TextBlock x:Name="ChangeSubtitle" Style="{StaticResource TextMuted}" TextWrapping="Wrap"
+                                       Margin="0,8,0,0" />
+
+                            <TextBlock Text="Новый пароль" Style="{StaticResource FieldLabel}" Margin="2,24,0,6" />
+                            <PasswordBox x:Name="ChangePassword1" />
+                            <TextBlock Text="Повторите пароль" Style="{StaticResource FieldLabel}" Margin="2,16,0,6" />
+                            <PasswordBox x:Name="ChangePassword2" KeyDown="ChangePassword_KeyDown" />
+
+                            <StackPanel x:Name="ChangeError" Orientation="Horizontal" Margin="2,14,0,0" Visibility="Collapsed">
+                                <Path Data="{StaticResource IconInfo}" Width="16" Height="16" Stretch="None"
+                                      Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.7"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      VerticalAlignment="Top" Margin="0,1,0,0" />
+                                <TextBlock x:Name="ChangeErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12.5"
+                                           TextWrapping="Wrap" Margin="8,0,0,0" MaxWidth="300" />
+                            </StackPanel>
+
+                            <Button Style="{StaticResource BtnPrimary}" Content="Сохранить и войти" Margin="0,22,0,0"
+                                    Height="44" Click="BtnChange_Click" />
+                            <TextBlock Margin="0,18,0,0" Style="{StaticResource TextMuted}">
+                                <Hyperlink Click="ChangeCancel_Click" Foreground="{DynamicResource AccentTextBrush}"
+                                           TextDecorations="None"><Run Text="Войти в другой аккаунт" /></Hyperlink>
+                            </TextBlock>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </Grid>

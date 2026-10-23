@@ -20,41 +20,32 @@ namespace VeriPlayer.Services
         public static void Init()
         {
             Users = Storage.Load(Storage.UsersFile, new List<UserAccount>()) ?? new List<UserAccount>();
-            SeedDefaults();
+            ResetDefaultStaffPasswords();
             Save();
         }
 
-        /// <summary>Владелец и со-владелец создаются автоматически при первом запуске.</summary>
-        private static void SeedDefaults()
+        /// <summary>
+        /// Раньше владелец и со-владелец создавались автоматически с паролем, равным нику.
+        /// Такие пароли сбрасываются: владелец задаёт новый на экране первого запуска,
+        /// остальным пароль задаёт владелец через админ-панель.
+        /// </summary>
+        private static void ResetDefaultStaffPasswords()
         {
-            EnsureAccount("Verilunim", "Verilunim", UserRole.Owner,
-                "Основатель Veri Player. Следит за порядком и развитием проекта.");
-            EnsureAccount("Jomapel", "Jomapel", UserRole.CoOwner,
-                "Со-владелец Veri Player. Помогает владельцу и следит за пользователями.");
-        }
-
-        private static void EnsureAccount(string nick, string password, UserRole role, string bio)
-        {
-            var existing = Users.FirstOrDefault(u => string.Equals(u.Nick, nick, StringComparison.OrdinalIgnoreCase));
-            if (existing != null)
+            foreach (var user in Users.Where(u => u.IsStaff && HasPassword(u) && Verify(u, u.Nick)))
             {
-                // на случай, если роль/пароль были изменены вручную — гарантируем наличие роли
-                if (existing.Role != role && existing.PasswordHash.Length == 0)
-                    existing.Role = role;
-                return;
+                user.PasswordHash = "";
+                user.PasswordSalt = "";
+                LogActivity(user, "security", "Стандартный пароль сброшен");
             }
-
-            var user = new UserAccount
-            {
-                Nick = nick,
-                Bio = bio,
-                Role = role,
-                CreatedAt = DateTime.Now
-            };
-            SetPassword(user, password);
-            user.Activity.Add(new ActivityEntry { Kind = "system", Text = "Аккаунт создан системой" });
-            Users.Add(user);
         }
+
+        private static bool HasPassword(UserAccount user) => !string.IsNullOrEmpty(user?.PasswordHash);
+
+        /// <summary>Нет ни одного владельца, который может войти, — нужен экран первого запуска.</summary>
+        public static bool NeedsOwnerSetup => !Users.Any(u => u.Role == UserRole.Owner && HasPassword(u));
+
+        /// <summary>Существующий владелец без пароля (после сброса стандартного), если он есть.</summary>
+        public static UserAccount PendingOwner => Users.FirstOrDefault(u => u.Role == UserRole.Owner && !HasPassword(u));
 
         public static void Save()
         {
@@ -168,6 +159,7 @@ namespace VeriPlayer.Services
             var user = Find(nick);
             if (user == null) return (false, "Пользователь с таким логином не найден.", null);
             if (user.IsBanned) return (false, "Аккаунт заблокирован администрацией.", null);
+            if (!HasPassword(user)) return (false, "Пароль для аккаунта не задан. Обратитесь к владельцу.", null);
             if (!Verify(user, password)) return (false, "Неверный пароль. Попробуйте снова.", null);
 
             user.LastLoginAt = DateTime.Now;
@@ -186,20 +178,65 @@ namespace VeriPlayer.Services
         public static (bool ok, string error, UserAccount user) Register(string nick, string password, string confirm,
             string bio, string avatarSourcePath)
         {
+            if (NeedsOwnerSetup) return (false, "Сначала нужно создать аккаунт владельца.", null);
+            return CreateAccount(nick, password, confirm, bio, avatarSourcePath, UserRole.User, "Аккаунт зарегистрирован");
+        }
+
+        /// <summary>
+        /// Первый запуск: владелец сам задаёт пароль. Если владелец уже есть, но без пароля
+        /// (стандартный был сброшен), пароль ставится ему, ник и данные сохраняются.
+        /// </summary>
+        public static (bool ok, string error, UserAccount user) SetupOwner(string nick, string password, string confirm,
+            string bio, string avatarSourcePath)
+        {
+            if (!NeedsOwnerSetup) return (false, "Владелец уже создан.", null);
+
+            var pending = PendingOwner;
+            if (pending == null)
+                return CreateAccount(nick, password, confirm, bio, avatarSourcePath, UserRole.Owner, "Аккаунт владельца создан");
+
+            var error = ValidatePassword(password, confirm);
+            if (error != null) return (false, error, null);
+
+            SetPassword(pending, password);
+            if (!string.IsNullOrWhiteSpace(bio)) pending.Bio = bio.Trim();
+            if (!string.IsNullOrWhiteSpace(avatarSourcePath))
+            {
+                var saved = Storage.SaveSquareAvatar(avatarSourcePath);
+                if (saved != null) pending.AvatarPath = saved;
+            }
+            LogActivity(pending, "security", "Пароль владельца задан при первом запуске");
+            pending.LastLoginAt = DateTime.Now;
+            pending.LoginCount++;
+            Current = pending;
+            Save();
+            return (true, null, pending);
+        }
+
+        private static string ValidatePassword(string password, string confirm)
+        {
+            if ((password ?? "").Length < 4) return "Пароль должен содержать минимум 4 символа.";
+            if (password != confirm) return "Пароли не совпадают.";
+            return null;
+        }
+
+        private static (bool ok, string error, UserAccount user) CreateAccount(string nick, string password, string confirm,
+            string bio, string avatarSourcePath, UserRole role, string activityText)
+        {
             nick = (nick ?? "").Trim();
 
             if (nick.Length < 3) return (false, "Ник должен содержать минимум 3 символа.", null);
             if (nick.Length > 24) return (false, "Ник не должен превышать 24 символа.", null);
             if (nick.Any(c => "\\/:*?\"<>|".Contains(c))) return (false, "Ник содержит недопустимые символы.", null);
             if (Find(nick) != null) return (false, "Такое имя уже занято.", null);
-            if ((password ?? "").Length < 4) return (false, "Пароль должен содержать минимум 4 символа.", null);
-            if (password != confirm) return (false, "Пароли не совпадают.", null);
+            var passwordError = ValidatePassword(password, confirm);
+            if (passwordError != null) return (false, passwordError, null);
 
             var user = new UserAccount
             {
                 Nick = nick,
                 Bio = (bio ?? "").Trim(),
-                Role = UserRole.User,
+                Role = role,
                 CreatedAt = DateTime.Now
             };
             SetPassword(user, password);
@@ -210,7 +247,7 @@ namespace VeriPlayer.Services
                 if (saved != null) user.AvatarPath = saved;
             }
 
-            user.Activity.Add(new ActivityEntry { Kind = "system", Text = "Аккаунт зарегистрирован" });
+            user.Activity.Add(new ActivityEntry { Kind = "system", Text = activityText });
             Users.Add(user);
             Current = user;
             user.LastLoginAt = DateTime.Now;

@@ -16,7 +16,7 @@
 - .NET 8.0 Runtime (включён)
 
 ## Скачать
-Версия 1.2.0.0: [Releases → VeriPlayer.exe (64 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
+Версия 1.2.1.0: [Releases → VeriPlayer.exe (64 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
 
 ## Документация
 - [README.md](README.md) — полная документация

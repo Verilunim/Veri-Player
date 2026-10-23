@@ -110,14 +110,10 @@ namespace VeriPlayer.Views.Panels
                 MainWindow.Instance?.ShowToast("Текущий пароль неверный", "error");
                 return;
             }
-            if (NewPassword.Password.Length < 4)
+            var error = AuthService.ValidatePassword(NewPassword.Password, ConfirmPassword.Password, user.IsStaff);
+            if (error != null)
             {
-                MainWindow.Instance?.ShowToast("Новый пароль слишком короткий (минимум 4 символа)", "warn");
-                return;
-            }
-            if (NewPassword.Password != ConfirmPassword.Password)
-            {
-                MainWindow.Instance?.ShowToast("Пароли не совпадают", "warn");
+                MainWindow.Instance?.ShowToast(error, "warn");
                 return;
             }
 

@@ -47,6 +47,7 @@ namespace VeriPlayer
             WireServices();
 
             Auth.Authenticated += user => EnterApp();
+            LicenseService.Changed += RefreshPro;
 
             _searchTimer.Interval = TimeSpan.FromMilliseconds(220);
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); RefreshLibrary(); };
@@ -88,6 +89,7 @@ namespace VeriPlayer
 
         private void ShowAuthScreen()
         {
+            ApplyAppearance();
             Shell.Visibility = Visibility.Collapsed;
             Auth.Visibility = Visibility.Visible;
             Auth.Prepare();
@@ -118,8 +120,12 @@ namespace VeriPlayer
             UserAvatar.Initial = AuthService.Current.Initial;
             BtnAdmin.Visibility = AuthService.Current.IsStaff ? Visibility.Visible : Visibility.Collapsed;
 
+            RefreshPro();
             RefreshAll();
-            UpdateBackgroundVideo();
+
+            // один раз после активации ключа — при первом запуске программы
+            if (LicenseService.TakeWelcome(AuthService.Current))
+                Dispatcher.BeginInvoke(new Action(() => ShowPanel(new ProWelcomePanel())), DispatcherPriority.Loaded);
             ShowToast("Добро пожаловать, " + AuthService.Current.Nick + "!", "ok");
         }
 
@@ -240,27 +246,33 @@ namespace VeriPlayer
             });
         }
 
+        /// <summary>
+        /// Оформление, которое сейчас действует: своё у Pro+, стандартное у остальных.
+        /// Выбранное раньше не стирается — вернётся, когда Pro+ снова активен.
+        /// </summary>
+        private static AppSettings Look => LicenseService.IsProCurrent
+            ? App.Settings
+            : new AppSettings
+            {
+                // это не оформление, а удобство — оставляем как есть
+                ReduceMotion = App.Settings.ReduceMotion,
+                Visualizer = App.Settings.Visualizer
+            };
+
         public void ApplyAppearance()
         {
-            ThemeService.Apply(App.Settings);
-            
-            Diagnostics.Log($"ApplyAppearance: Effect={App.Settings.Effect}, Intensity={App.Settings.EffectIntensity}");
-            
-            var kind = Effects.Parse(App.Settings.Effect);
-            Diagnostics.Log($"ApplyAppearance: Parsed Kind={kind}");
-            
-            Particles.Kind = kind;
-            Particles.Intensity = App.Settings.EffectIntensity;
-            
-            Diagnostics.Log($"ApplyAppearance: Set Particles.Kind={Particles.Kind}, Particles.Intensity={Particles.Intensity}");
-            
+            var look = Look;
+            ThemeService.Apply(look);
+            Particles.Kind = Effects.Parse(look.Effect);
+            Particles.Intensity = look.EffectIntensity;
             ApplyBackground();
             AuroraLayer.Opacity = App.Settings.ReduceMotion ? 0.32 : 0.5;
         }
 
         public void ApplyBackground()
         {
-            var background = BackgroundService.Active;
+            var look = Look;
+            var background = LicenseService.IsProCurrent ? BackgroundService.Active : null;
 
             if (background == null)
             {
@@ -270,7 +282,7 @@ namespace VeriPlayer
             }
             else
             {
-                double blur = App.Settings.BackgroundBlur;
+                double blur = look.BackgroundBlur;
                 int decode = blur > 2 ? 1100 : 2200;
                 var image = Storage.LoadImage(background.FilePath, decode);
                 BackgroundImage.Source = image;
@@ -280,8 +292,36 @@ namespace VeriPlayer
                     : null;
             }
 
-            BackgroundVeil.Opacity = App.Settings.BackgroundDim;
+            BackgroundVeil.Opacity = look.BackgroundDim;
         }
+
+        // ================================================================== Pro+
+
+        /// <summary>true — можно продолжать; иначе показывает окно Pro+ с названием функции.</summary>
+        public bool RequirePro(string feature)
+        {
+            if (LicenseService.IsProCurrent) return true;
+            ShowPanel(new ProPanel(feature));
+            return false;
+        }
+
+        /// <summary>Замки на кнопках, оформление и клип — после входа и смены статуса Pro+.</summary>
+        public void RefreshPro()
+        {
+            bool pro = LicenseService.IsProCurrent;
+            var lockVisibility = pro ? Visibility.Collapsed : Visibility.Visible;
+            LockEffects.Visibility = lockVisibility;
+            LockTheme.Visibility = lockVisibility;
+            LockBackground.Visibility = lockVisibility;
+            foreach (var item in _nav) item.Locked = !pro && item.Tag == "generate";
+            UserProMark.Visibility = pro ? Visibility.Visible : Visibility.Collapsed;
+
+            ApplyAppearance();
+            UpdateBackgroundVideo();
+            _player?.RefreshProLocks();
+        }
+
+        private void BtnPro_Click(object sender, RoutedEventArgs e) => ShowPanel(new ProPanel());
 
         // ================================================================== навигация
 
@@ -296,9 +336,21 @@ namespace VeriPlayer
             NavList.ItemsSource = _nav;
         }
 
+        private bool _navGuard;
+
         private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (NavList.SelectedItem is not NavItem item) return;
+            if (_navGuard || NavList.SelectedItem is not NavItem item) return;
+
+            if (item.Tag == "generate" && !RequirePro("Создание музыки с AI"))
+            {
+                // остаёмся там, где были
+                _navGuard = true;
+                NavList.SelectedItem = _nav.FirstOrDefault(n => n.Tag == _view);
+                _navGuard = false;
+                return;
+            }
+
             _view = item.Tag;
             _currentPlaylist = null;
             PlaylistList.SelectedItem = null;
@@ -967,7 +1019,7 @@ namespace VeriPlayer
         /// <summary>Выбор обложки для трека, у которого её нет (или замена существующей).</summary>
         public bool PickCover(Track track)
         {
-            if (track == null) return false;
+            if (track == null || !RequirePro("Обложки песен")) return false;
 
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -999,7 +1051,7 @@ namespace VeriPlayer
         /// <summary>Прикрепляет короткий клип (MP4, до 5 с) как фон для песни.</summary>
         public async void PickClip(Track track)
         {
-            if (track == null) return;
+            if (track == null || !RequirePro("Клипы на фон")) return;
 
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -1112,6 +1164,7 @@ namespace VeriPlayer
         public void UpdateBackgroundVideo()
         {
             if (VideoBackground == null) return;
+            if (!LicenseService.IsProCurrent) { StopVideo(); return; }
 
             try
             {
@@ -1288,9 +1341,20 @@ namespace VeriPlayer
             if (_player != null) _player.SyncVolume();
         }
 
-        private void BtnEffects_Click(object sender, RoutedEventArgs e) => ShowPanel(new EffectsPanel());
-        private void BtnTheme_Click(object sender, RoutedEventArgs e) => ShowPanel(new ThemePanel());
-        private void BtnBackground_Click(object sender, RoutedEventArgs e) => ShowPanel(new BackgroundPanel());
+        private void BtnEffects_Click(object sender, RoutedEventArgs e)
+        {
+            if (RequirePro("Эффекты фона")) ShowPanel(new EffectsPanel());
+        }
+
+        private void BtnTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (RequirePro("RGB-цвета интерфейса")) ShowPanel(new ThemePanel());
+        }
+
+        private void BtnBackground_Click(object sender, RoutedEventArgs e)
+        {
+            if (RequirePro("Свой фон")) ShowPanel(new BackgroundPanel());
+        }
         private void BtnServices_Click(object sender, RoutedEventArgs e) => ShowPanel(new SpotifyPanel());
         private void BtnSettings_Click(object sender, RoutedEventArgs e) => ShowPanel(new SettingsPanel());
         private void UserCard_Click(object sender, MouseButtonEventArgs e) => ShowPanel(new ProfilePanel());
@@ -1304,6 +1368,7 @@ namespace VeriPlayer
         public void ToggleAdmin()
         {
             if (_player == null) return;
+            if (AuthService.Current == null || !AuthService.Current.IsStaff) return;
 
             // подхватываем аккаунты, зарегистрированные вне этого окна, — список всегда актуален
             AuthService.MergeFromDisk();

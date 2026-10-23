@@ -24,6 +24,22 @@ namespace VeriPlayer.Services
         public static void Init()
         {
             Load();
+
+            // генерация, начатая до закрытия программы, иначе навсегда осталась бы «в процессе»
+            foreach (var track in _history.Where(t => !string.IsNullOrWhiteSpace(t.TaskId) && !IsFinal(t.Status)).ToList())
+                _ = PollStatusAsync(track);
+        }
+
+        private static bool IsFinal(string status) =>
+            status == "complete" || status == "error" || status == "failed";
+
+        /// <summary>Ключ кладём в каждый запрос к Suno отдельно: общий DefaultRequestHeaders
+        /// не потокобезопасен и утёк бы на CDN при скачивании файлов.</summary>
+        private static HttpRequestMessage SunoRequest(HttpMethod method, string url, string apiKey)
+        {
+            var request = new HttpRequestMessage(method, url);
+            request.Headers.Add("api-key", apiKey);
+            return request;
         }
         
         private static void Load()
@@ -92,12 +108,10 @@ namespace VeriPlayer.Services
                 };
                 
                 var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                
-                _http.DefaultRequestHeaders.Clear();
-                _http.DefaultRequestHeaders.Add("api-key", apiKey);
-                
-                var response = await _http.PostAsync($"{BaseUrl}/generate", content);
+                var request = SunoRequest(HttpMethod.Post, $"{BaseUrl}/generate", apiKey);
+                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _http.SendAsync(request);
                 var responseText = await response.Content.ReadAsStringAsync();
                 
                 if (!response.IsSuccessStatusCode)
@@ -183,10 +197,8 @@ namespace VeriPlayer.Services
                 {
                     await Task.Delay(5000);  // проверяем каждые 5 секунд
                     
-                    _http.DefaultRequestHeaders.Clear();
-                    _http.DefaultRequestHeaders.Add("api-key", apiKey);
-                    
-                    var response = await _http.GetAsync($"{BaseUrl}/query?ids={track.TaskId}");
+                    var response = await _http.SendAsync(SunoRequest(HttpMethod.Get,
+                        $"{BaseUrl}/query?ids={Uri.EscapeDataString(track.TaskId)}", apiKey));
                     if (!response.IsSuccessStatusCode) continue;
                     
                     var json = await response.Content.ReadAsStringAsync();

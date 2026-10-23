@@ -320,12 +320,16 @@ namespace VeriPlayer.Views
 
         private void OpenPlayer_Click(object sender, RoutedEventArgs e) => RequestOpenPlayer?.Invoke();
 
+        private void IssueKey_Click(object sender, RoutedEventArgs e) =>
+            KeyGeneratorWindow.Open(Window.GetWindow(this), Current?.User.IsStaff == true ? null : Current?.Nick);
+
         private static string GeneratePassword()
         {
             const string alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            var random = new Random();
-            var chars = new char[10];
-            for (int i = 0; i < chars.Length; i++) chars[i] = alphabet[random.Next(alphabet.Length)];
+            // System.Random предсказуем — для паролей нужен криптографический генератор
+            var chars = new char[12];
+            for (int i = 0; i < chars.Length; i++)
+                chars[i] = alphabet[System.Security.Cryptography.RandomNumberGenerator.GetInt32(alphabet.Length)];
             return new string(chars);
         }
     }

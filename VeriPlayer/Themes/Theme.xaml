@@ -916,4 +916,49 @@
         </Style.Triggers>
     </Style>
 
+    <!-- ============================================================== Pro+ -->
+    <!-- Значок замка поверх кнопки функции, недоступной без Pro+ -->
+    <Style x:Key="ProLockBadge" TargetType="ContentControl">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="0,-5,-7,0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Visibility" Value="Collapsed" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border CornerRadius="7" Background="{DynamicResource AccentGradientBrush}">
+                        <Path Data="{StaticResource IconLock}" Width="8" Height="8" Stretch="Uniform" Stroke="White"
+                              StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Золотой «+» у ника пользователя с Pro+ -->
+    <LinearGradientBrush x:Key="GoldBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFF3B0" Offset="0" />
+        <GradientStop Color="#FFD45C" Offset="0.45" />
+        <GradientStop Color="#E59A1A" Offset="1" />
+    </LinearGradientBrush>
+
+    <Style x:Key="ProPlusMark" TargetType="TextBlock">
+        <Setter Property="Text" Value="+" />
+        <Setter Property="FontWeight" Value="Black" />
+        <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+        <Setter Property="Margin" Value="4,-2,0,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="ToolTip" Value="Подписка Pro+" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="#FFC83D" BlurRadius="8" ShadowDepth="0" Opacity="0.55" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

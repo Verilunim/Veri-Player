@@ -26,6 +26,22 @@ namespace VeriPlayer.Views
 
         public string CountText => _count > 0 ? _count.ToString() : "";
 
+        private bool _locked;
+        /// <summary>Пункт требует Pro+ — рядом показывается замок.</summary>
+        public bool Locked
+        {
+            get => _locked;
+            set
+            {
+                _locked = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Locked)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LockVisibility)));
+            }
+        }
+
+        public System.Windows.Visibility LockVisibility =>
+            _locked ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
         public event PropertyChangedEventHandler PropertyChanged;
     }
 
@@ -103,5 +119,7 @@ namespace VeriPlayer.Views
         public string CreatedText => User.CreatedText;
         public string LastLoginText => User.LastLoginText;
         public string LoginCountText => User.LoginCount + " входов";
+        public bool IsPro => LicenseService.For(User).Active;
+        public string ProText => LicenseService.For(User).Text;
     }
 }

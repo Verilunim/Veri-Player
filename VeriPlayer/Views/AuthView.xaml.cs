@@ -12,6 +12,7 @@ namespace VeriPlayer.Views
     {
         private string _avatarSource;
         private bool _loginMode = true;
+        private bool _ownerSetup;
 
         public event Action<UserAccount> Authenticated;
 
@@ -32,7 +33,33 @@ namespace VeriPlayer.Views
             RegError.Visibility = Visibility.Collapsed;
             LoginNick.Clear();
             LoginPassword.Clear();
-            LoginNick.Focus();
+            ApplyOwnerSetup();
+            if (_ownerSetup) ShowLogin(false, false);
+            else LoginNick.Focus();
+        }
+
+        // ------------------------------------------------------------------ первый запуск
+
+        /// <summary>Пока нет владельца с паролем, форма регистрации создаёт владельца.</summary>
+        private void ApplyOwnerSetup()
+        {
+            _ownerSetup = AuthService.NeedsOwnerSetup;
+            var pending = _ownerSetup ? AuthService.PendingOwner : null;
+
+            TabHost.Visibility = _ownerSetup ? Visibility.Collapsed : Visibility.Visible;
+            RegLoginLink.Visibility = _ownerSetup ? Visibility.Collapsed : Visibility.Visible;
+            RegTitle.Text = _ownerSetup ? "Первый запуск" : "Создать аккаунт";
+            RegSubtitle.Text = pending != null
+                ? "Задайте новый пароль для владельца «" + pending.Nick + "». Стандартный пароль больше не действует."
+                : _ownerSetup
+                    ? "Создайте аккаунт владельца: придумайте ник и пароль."
+                    : "Ник, пароль, аватар и пара слов о себе.";
+            BtnRegister.Content = _ownerSetup ? "Продолжить" : "Создать аккаунт";
+
+            RegNick.Text = pending?.Nick ?? "";
+            RegNick.IsReadOnly = pending != null;
+            RegPassword.Clear();
+            RegPassword2.Clear();
         }
 
         // ------------------------------------------------------------------ вкладки
@@ -44,6 +71,7 @@ namespace VeriPlayer.Views
 
         private void ShowLogin(bool login, bool animate = true)
         {
+            if (_ownerSetup) login = false;
             _loginMode = login;
             LoginPanel.Visibility = login ? Visibility.Visible : Visibility.Collapsed;
             RegisterPanel.Visibility = login ? Visibility.Collapsed : Visibility.Visible;
@@ -135,8 +163,9 @@ namespace VeriPlayer.Views
         private void BtnRegister_Click(object sender, RoutedEventArgs e)
         {
             RegAvatar.Initial = RegNick.Text.Length > 0 ? RegNick.Text : "V";
-            var (ok, error, user) = AuthService.Register(
-                RegNick.Text, RegPassword.Password, RegPassword2.Password, RegBio.Text, _avatarSource);
+            var (ok, error, user) = _ownerSetup
+                ? AuthService.SetupOwner(RegNick.Text, RegPassword.Password, RegPassword2.Password, RegBio.Text, _avatarSource)
+                : AuthService.Register(RegNick.Text, RegPassword.Password, RegPassword2.Password, RegBio.Text, _avatarSource);
 
             if (!ok)
             {
@@ -146,6 +175,7 @@ namespace VeriPlayer.Views
 
             RegError.Visibility = Visibility.Collapsed;
             _avatarSource = null;
+            ApplyOwnerSetup();
             Authenticated?.Invoke(user);
         }
 

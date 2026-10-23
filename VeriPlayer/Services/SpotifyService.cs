@@ -99,7 +99,7 @@ namespace VeriPlayer.Services
                     return (false, "Spotify вернул ошибку: " + error);
                 if (string.IsNullOrEmpty(code))
                     return (false, "Не дождался ответа от Spotify. Попробуйте снова.");
-                if (!string.IsNullOrEmpty(gotState) && gotState != state)
+                if (gotState != state)
                     return (false, "Несовпадение state — запрос отклонён в целях безопасности.");
 
                 status?.Report("Получаю токен доступа…");
@@ -381,7 +381,7 @@ namespace VeriPlayer.Services
                 if (token == null) return list;
 
                 var request = new HttpRequestMessage(HttpMethod.Get,
-                    "https://api.spotify.com/v1/playlists/" + playlistId + "/tracks?limit=" + limit);
+                    "https://api.spotify.com/v1/playlists/" + Uri.EscapeDataString(playlistId ?? "") + "/tracks?limit=" + limit);
                 request.Headers.Add("Authorization", "Bearer " + token);
                 var response = await Http.SendAsync(request).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) return list;

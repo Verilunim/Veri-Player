@@ -51,6 +51,10 @@
                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
                 <TextBlock Grid.Column="2" Text="{Binding CountText}" VerticalAlignment="Center" FontSize="11.5"
                            Foreground="{DynamicResource TextFaintBrush}" />
+                <Path Grid.Column="2" Data="{StaticResource IconLock}" Width="14" Height="14" Stretch="Uniform"
+                      StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Stroke="{DynamicResource AccentTextBrush}" VerticalAlignment="Center" ToolTip="Pro+"
+                      Visibility="{Binding LockVisibility}" />
             </Grid>
         </DataTemplate>
 
@@ -232,8 +236,16 @@
                                     </Grid.ColumnDefinitions>
                                     <controls:AvatarView x:Name="UserAvatar" Size="38" Ring="True" />
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock x:Name="UserName" FontSize="13.5" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" MaxWidth="150" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="UserName" FontSize="13.5" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:Name="UserProMark" Grid.Column="1" Style="{StaticResource ProPlusMark}"
+                                                       FontSize="16" Visibility="Collapsed" />
+                                        </Grid>
                                         <TextBlock x:Name="UserRole" FontSize="11" Foreground="{DynamicResource AccentTextBrush}" />
                                     </StackPanel>
                                     <Path Grid.Column="2" Data="{StaticResource IconChevronRight}" Style="{StaticResource IconBase}"
@@ -285,17 +297,35 @@
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
                                     WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button Style="{StaticResource BtnChip}" ToolTip="Подписка Pro+" Click="BtnPro_Click"
+                                    Margin="0,0,8,0" Padding="11,6">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource IconSparkle}" Style="{StaticResource IconBase}" Width="14" Height="14"
+                                          Stroke="{DynamicResource AccentTextBrush}" />
+                                    <TextBlock Text="Pro+" FontWeight="SemiBold" Margin="6,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AccentTextBrush}" />
+                                </StackPanel>
+                            </Button>
                             <Button Style="{StaticResource BtnIcon}" ToolTip="Эффекты фона" Click="BtnEffects_Click">
-                                <Path Data="{StaticResource IconSparkle}" Style="{StaticResource IconBase}" Width="21" Height="21"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                <Grid>
+                                    <Path Data="{StaticResource IconSparkle}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <ContentControl x:Name="LockEffects" Style="{StaticResource ProLockBadge}" />
+                                </Grid>
                             </Button>
                             <Button Style="{StaticResource BtnIcon}" ToolTip="RGB-выбор цвета" Click="BtnTheme_Click">
-                                <Path Data="{StaticResource IconPalette}" Style="{StaticResource IconBase}" Width="21" Height="21"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                <Grid>
+                                    <Path Data="{StaticResource IconPalette}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <ContentControl x:Name="LockTheme" Style="{StaticResource ProLockBadge}" />
+                                </Grid>
                             </Button>
                             <Button Style="{StaticResource BtnIcon}" ToolTip="Мой фон" Click="BtnBackground_Click">
-                                <Path Data="{StaticResource IconImage}" Style="{StaticResource IconBase}" Width="21" Height="21"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                <Grid>
+                                    <Path Data="{StaticResource IconImage}" Style="{StaticResource IconBase}" Width="21" Height="21"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                    <ContentControl x:Name="LockBackground" Style="{StaticResource ProLockBadge}" />
+                                </Grid>
                             </Button>
                             <Button Style="{StaticResource BtnIcon}" ToolTip="Spotify и другие сервисы" Click="BtnServices_Click">
                                 <Path Data="{StaticResource IconSpotify}" Style="{StaticResource IconBase}" Width="21" Height="21"

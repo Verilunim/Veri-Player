@@ -1,86 +1,70 @@
-# Загрузка Veri Player на GitHub
+# Публикация Veri Player на GitHub
 
-Репозиторий готов к загрузке. Финальный размер: **~6.5 MB**.
+Репозиторий: https://github.com/Verilunim/Veri-Player
 
-## Шаг 1: Создать репозиторий на GitHub
+Готовый exe в Git не хранится (папка `dist/` в `.gitignore`) — он выкладывается в **Releases**.
 
-1. Зайти на https://github.com/new
-2. Указать:
-   - **Repository name**: `veri-player`
-   - **Description**: `Aesthetic music player with AI generation, animated backgrounds, and cloud integrations`
-   - **Public/Private**: выбрать
-   - **НЕ добавлять** README, .gitignore, license (уже есть локально)
-3. Нажать **Create repository**
-
-## Шаг 2: Загрузить код
-
-Скопировать команды из GitHub (они будут показаны после создания):
+## Шаг 1: Собрать exe
 
 ```powershell
 cd "C:\Users\vanda\OneDrive\Belgeler\Default Project\Veri Player"
-
-# Добавить remote (замените YOUR_USERNAME)
-git remote add origin https://github.com/YOUR_USERNAME/veri-player.git
-
-# Загрузить код
-git branch -M main
-git push -u origin main
+dotnet publish VeriPlayer/VeriPlayer.csproj -p:PublishProfile=VeriPlayer-win-x64
 ```
+
+Результат: `dist/VeriPlayer.exe` (~64 MB, .NET уже внутри). Перед сборкой закройте запущенный VeriPlayer — иначе файл занят.
+
+## Шаг 2: Отправить код
+
+Работа ведётся в отдельной ветке, затем она вливается в `main` через Pull Request:
+
+```powershell
+git push -u origin <ветка>
+```
+
+На GitHub: **Compare & pull request** → проверить изменения → **Merge**.
+
+> В адресе `origin` не должно быть токена. Проверить: `git remote -v`. Правильный вид — `https://github.com/Verilunim/Veri-Player.git`, вход выполняется через Git Credential Manager.
 
 ## Шаг 3: Создать Release
 
-1. Перейти в **Releases** → **Create a new release**
-2. Указать:
-   - **Tag**: `v1.1.0.0`
-   - **Release title**: `Veri Player 1.1.0.0`
-   - **Description**: описать изменения
-3. Прикрепить файл **VeriPlayer.exe** (64 MB) из `dist/`
-4. Нажать **Publish release**
+1. **Releases** → **Draft a new release**
+2. **Choose a tag**: `v1.2.0.0` → **Create new tag** (target: `main`)
+3. **Release title**: `Veri Player 1.2.0.0`
+4. **Description**: текст из `release-notes/v1.2.0.0.md`
+5. Прикрепить **dist/VeriPlayer.exe**
+6. **Publish release**
+
+## Ключи Pro+ и безопасность
+
+- **Никогда не коммитьте** закрытый ключ подписи (`%USERPROFILE%\.veriplayer\license-private.pem`). В `.gitignore` уже есть `*.pem`.
+- В репозитории лежит только открытый ключ (`LicenseService.PublicKey`) и утилита `tools/VeriKeygen` — без закрытого ключа она ключей не выпустит.
+- Если репозиторий публичный, программу можно собрать из исходников без проверки Pro+. Ключи защищают готовый exe из Releases.
 
 ## Структура репозитория
 
 ```
-veri-player/
+Veri-Player/
 ├── .github/README.md       # Краткое описание для GitHub
 ├── README.md               # Полная документация
 ├── LICENSE                 # MIT License
 ├── GITHUB_DEPLOY.md        # Эта инструкция
 ├── DISCORD_SETUP.md        # Настройка Discord RPC
 ├── README_SUNO.md          # Настройка Suno API
+├── release-notes/          # Тексты релизов
 ├── VeriPlayer/             # Исходники приложения
-│   ├── VeriPlayer.csproj
-│   ├── App.xaml.cs
-│   ├── MainWindow.xaml.cs
-│   ├── Services/           # Бизнес-логика
-│   ├── Views/              # UI компоненты
+│   ├── Services/           # Бизнес-логика (Audio, Auth, License, Library…)
+│   ├── Views/              # UI: окна и панели
 │   ├── Controls/           # Кастомные контролы
 │   ├── Models/             # Модели данных
 │   ├── Themes/             # Стили и темы
 │   └── Assets/             # Иконки, логотип
+├── tools/VeriKeygen/       # Консольный выпуск ключей Pro+
 └── dist/                   # НЕ в Git (только в Releases)
-    └── VeriPlayer.exe      # Готовый exe
+    └── VeriPlayer.exe
 ```
-
-## Размер
-
-- **Git репозиторий**: 6.5 MB
-- **Исходники**: 94 файла, ~7 MB
-- **Готовый exe**: 64 MB (в Releases)
 
 ## Технологии
 
-- .NET 8.0 + WPF
-- C# 12
-- NAudio 2.2.1 (аудио)
-- TagLibSharp 2.3.0 (метаданные)
-- QRCoder 1.8.1 (QR-коды)
-
-## Лицензия
-
-MIT — свободное использование и модификация.
-
----
-
-**После загрузки:**
-- Ссылка на репозиторий: `https://github.com/YOUR_USERNAME/veri-player`
-- Ссылка на релиз: `https://github.com/YOUR_USERNAME/veri-player/releases/tag/v1.1.0.0`
+- .NET 8.0 + WPF, C# 12
+- NAudio 2.2.1, TagLibSharp 2.3.0, QRCoder 1.8.1, DiscordRichPresence
+- ECDSA P-256 (ключи Pro+), PBKDF2-SHA256 и DPAPI (аккаунты)

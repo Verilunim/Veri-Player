@@ -27,6 +27,15 @@ namespace VeriPlayer.Models
         public string PasswordHash { get; set; } = "";
         public string PasswordSalt { get; set; } = "";
         public int PasswordIterations { get; set; } = 120000;
+        /// <summary>Неудачные попытки входа подряд и время, до которого вход заблокирован.</summary>
+        public int FailedLogins { get; set; }
+        public DateTime LockoutUntil { get; set; }
+        /// <summary>Активированный ключ Pro+ (проверяется подписью при каждом запуске).</summary>
+        public string ProKey { get; set; } = "";
+        /// <summary>Самое позднее время, которое видела программа: перевод часов назад не продлевает Pro+.</summary>
+        public DateTime LicenseSeenUtc { get; set; }
+        /// <summary>Ключ активирован, приветствие Pro+ ещё не показано (покажется один раз при запуске).</summary>
+        public bool ProWelcomePending { get; set; }
         public string Bio { get; set; } = "";
         public string AvatarPath { get; set; } = "";
         public UserRole Role { get; set; } = UserRole.User;
@@ -70,6 +79,8 @@ namespace VeriPlayer.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string FilePath { get; set; } = "";
+        /// <summary>Откуда файл был импортирован, если его скопировали в папку программы.</summary>
+        public string SourcePath { get; set; } = "";
         public string Title { get; set; } = "";
         public string Artist { get; set; } = "";
         public string Album { get; set; } = "";
@@ -204,6 +215,10 @@ namespace VeriPlayer.Models
         
         // ---- AI music generation ----
         public string SunoApiKey { get; set; } = "";
+
+        // ---- Pro+ (только для команды) ----
+        /// <summary>Путь к закрытому ключу подписи, если он лежит не на месте по умолчанию.</summary>
+        public string LicensePrivateKeyPath { get; set; } = "";
     }
 
     public class SpotifyToken

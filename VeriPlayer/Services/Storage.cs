@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Windows.Media;
@@ -77,7 +79,10 @@ namespace VeriPlayer.Services
             }
         }
 
-        public static void Save<T>(string file, T value)
+        public static void Save<T>(string file, T value) =>
+            WriteAtomic(file, () => Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, Json)));
+
+        private static void WriteAtomic(string file, Func<byte[]> content)
         {
             lock (Gate)
             {
@@ -86,12 +91,61 @@ namespace VeriPlayer.Services
                     var dir = Path.GetDirectoryName(file);
                     if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                     var tmp = file + ".tmp";
-                    File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
-                    if (File.Exists(file)) File.Delete(file);
-                    File.Move(tmp, file);
+                    File.WriteAllBytes(tmp, content());
+                    // одна операция вместо Delete+Move: при сбое между ними файл пропадал целиком
+                    File.Move(tmp, file, true);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Diagnostics.Log("save " + Path.GetFileName(file) + ": " + ex.Message);
+                }
             }
+        }
+
+        // ------------------------------------------------------------------ json под DPAPI
+
+        // Привязывает шифр к этой программе: другое приложение того же пользователя
+        // без этих байтов файл через DPAPI не расшифрует.
+        private static readonly byte[] ProtectEntropy = Encoding.UTF8.GetBytes("VeriPlayer/users/v1");
+
+        /// <summary>
+        /// Файл зашифрован ключом учётной записи Windows (DPAPI): на другом компьютере или
+        /// под другим пользователем Windows его не прочитать и не подменить незаметно.
+        /// Старый открытый JSON читается как есть и шифруется при следующем сохранении.
+        /// </summary>
+        public static T LoadProtected<T>(string file, T fallback) where T : class
+        {
+            lock (Gate)
+            {
+                try
+                {
+                    if (!File.Exists(file)) return fallback;
+                    var bytes = File.ReadAllBytes(file);
+                    if (bytes.Length == 0) return fallback;
+
+                    var plain = LooksLikeJson(bytes)
+                        ? bytes
+                        : ProtectedData.Unprotect(bytes, ProtectEntropy, DataProtectionScope.CurrentUser);
+                    return JsonSerializer.Deserialize<T>(plain, Json) ?? fallback;
+                }
+                catch (Exception ex)
+                {
+                    Diagnostics.Log("load " + Path.GetFileName(file) + ": " + ex.Message);
+                    try { File.Copy(file, file + ".broken", true); } catch { }
+                    return fallback;
+                }
+            }
+        }
+
+        public static void SaveProtected<T>(string file, T value) =>
+            WriteAtomic(file, () => ProtectedData.Protect(
+                JsonSerializer.SerializeToUtf8Bytes(value, Json), ProtectEntropy, DataProtectionScope.CurrentUser));
+
+        private static bool LooksLikeJson(byte[] bytes)
+        {
+            int i = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+            while (i < bytes.Length && (bytes[i] == ' ' || bytes[i] == '\t' || bytes[i] == '\r' || bytes[i] == '\n')) i++;
+            return i < bytes.Length && (bytes[i] == '[' || bytes[i] == '{');
         }
 
         // ------------------------------------------------------------------ files

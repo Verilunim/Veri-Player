@@ -14,7 +14,7 @@
    - `play` — иконка воспроизведения (маленькая)
    - `pause` — иконка паузы (маленькая)
 7. Открыть файл `DiscordService.cs` в редакторе
-8. Заменить строку `private const string ApplicationId = "1234567890123456789";` на ваш Application ID
+8. Заменить строку `private static readonly string ApplicationId = "1234567890123456789";` на ваш Application ID (пока стоит эта заглушка, Rich Presence отключён)
 9. Пересобрать приложение
 
 ## Примечание

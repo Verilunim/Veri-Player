@@ -71,42 +71,15 @@ namespace VeriPlayer.Services
 
             try
             {
-                if (includeFile)
-                {
-                    Diagnostics.Log($"ShareService.BuildLink: includeFile=true, FilePath={track.FilePath}");
-                    Diagnostics.Log($"ShareService.BuildLink: track.Exists={track.Exists}");
-                    
-                    if (!track.Exists)
-                    {
-                        Diagnostics.Log("ShareService.BuildLink: track.Exists=false, file check: " + 
-                            (File.Exists(track.FilePath) ? "EXISTS" : "NOT EXISTS"));
-                    }
-                    
-                    if (track.Exists)
-                    {
-                        var info = new FileInfo(track.FilePath);
-                        Diagnostics.Log($"ShareService.BuildLink: file size={info.Length}, max={MaxEmbedBytes}");
-                        
-                        if (info.Length <= MaxEmbedBytes)
-                        {
-                            var bytes = File.ReadAllBytes(track.FilePath);
-                            payload.Data = Convert.ToBase64String(bytes);
-                            Diagnostics.Log($"ShareService.BuildLink: encoded {bytes.Length} bytes -> {payload.Data.Length} base64 chars");
-                        }
-                        else
-                        {
-                            Diagnostics.Log($"ShareService.BuildLink: file too large ({info.Length} > {MaxEmbedBytes})");
-                        }
-                    }
-                }
+                if (includeFile && track.Exists && new FileInfo(track.FilePath).Length <= MaxEmbedBytes)
+                    payload.Data = Convert.ToBase64String(File.ReadAllBytes(track.FilePath));
             }
             catch (Exception ex)
             {
-                Diagnostics.Log($"ShareService.BuildLink: error reading file: {ex.Message}");
+                Diagnostics.Log("ShareService.BuildLink: error reading file: " + ex.Message);
             }
 
             var json = JsonSerializer.Serialize(payload, Storage.Json);
-            Diagnostics.Log($"ShareService.BuildLink: final link length={Scheme.Length + B64Url(Encoding.UTF8.GetBytes(json)).Length}, hasData={!string.IsNullOrEmpty(payload.Data)}");
             return Scheme + B64Url(Encoding.UTF8.GetBytes(json));
         }
 
@@ -178,12 +151,19 @@ namespace VeriPlayer.Services
             if (!string.IsNullOrEmpty(payload.Data))
             {
                 // В ссылке лежит сам звук — распаковываем и импортируем настоящий файл
+                // расширение приходит из чужой ссылки: пускаем только аудио-форматы, иначе
+                // «..\..\» или «.exe» позволили бы записать файл куда угодно
+                var ext = string.IsNullOrWhiteSpace(payload.Ext) ? ".mp3" : payload.Ext.Trim();
+                if (!ext.StartsWith(".")) ext = "." + ext;
+                if (!LibraryService.SupportedExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
+                    return (false, "Ссылка содержит файл неподдерживаемого формата.", null);
+
                 string filePath;
                 try
                 {
                     var bytes = FromB64Url(payload.Data);
-                    var ext = string.IsNullOrWhiteSpace(payload.Ext) ? ".mp3" : payload.Ext;
-                    if (!ext.StartsWith(".")) ext = "." + ext;
+                    if (bytes.Length > MaxEmbedBytes)
+                        return (false, "Файл в ссылке слишком большой.", null);
                     filePath = Path.Combine(Storage.CopiedMusicDir, Storage.UniqueFileName(ext));
                     File.WriteAllBytes(filePath, bytes);
                 }

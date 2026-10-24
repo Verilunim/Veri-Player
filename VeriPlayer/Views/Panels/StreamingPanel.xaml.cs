@@ -64,7 +64,7 @@ namespace VeriPlayer.Views.Panels
             LibraryView.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
             DisconnectButton.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
             Attribution.Visibility = connected && IsSoundCloud ? Visibility.Visible : Visibility.Collapsed;
-            Attribution.Text = "Треки воспроизводятся из SoundCloud. Автор указан у каждого трека; страница трека — в меню «Открыть на SoundCloud».";
+            Attribution.Text = "Треки воспроизводятся из SoundCloud. Автор указан у каждого трека; страница трека — правой кнопкой мыши → «Открыть на SoundCloud».";
 
             if (connected) ShowRoot();
         }

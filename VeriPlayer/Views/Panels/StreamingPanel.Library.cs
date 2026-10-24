@@ -176,6 +176,24 @@ namespace VeriPlayer.Views.Panels
             }
         }
 
+        private void Rows_RightClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if ((e.OriginalSource as FrameworkElement)?.DataContext is not Row row) return;
+            var url = row.Payload switch
+            {
+                Track t => t.WebUrl,
+                SoundCloudService.PlaylistInfo p => p.WebUrl,
+                YouTubeMusicService.Item i => i.Url,
+                _ => ""
+            };
+            if (string.IsNullOrWhiteSpace(url)) return;
+
+            var item = new MenuItem { Header = IsSoundCloud ? "Открыть на SoundCloud" : "Открыть в YouTube Music" };
+            item.Click += (s, a) => YouTubeMusicService.Open(url);
+            new ContextMenu { Items = { item }, IsOpen = true };
+            e.Handled = true;
+        }
+
         /// <summary>Ссылка на страницу трека — требование SoundCloud к сторонним плеерам.</summary>
         public static void OpenOnService(Track track)
         {

@@ -334,6 +334,8 @@ namespace VeriPlayer
             _nav.Add(new NavItem { Tag = "recent", Title = "Недавние", Icon = (Geometry)FindResource("IconClock") });
             _nav.Add(new NavItem { Tag = "generate", Title = "Создать песню", Icon = (Geometry)FindResource("IconWand") });
             _nav.Add(new NavItem { Tag = "addlink", Title = "Добавить по ссылке", Icon = (Geometry)FindResource("IconLink") });
+            _nav.Add(new NavItem { Tag = "soundcloud", Title = "SoundCloud", Icon = (Geometry)FindResource("IconCloud") });
+            _nav.Add(new NavItem { Tag = "ytmusic", Title = "YouTube Music", Icon = (Geometry)FindResource("IconYouTube") });
             NavList.ItemsSource = _nav;
         }
 
@@ -368,6 +370,12 @@ namespace VeriPlayer
                 return;
             }
 
+            if (item.Tag == "soundcloud" || item.Tag == "ytmusic")
+            {
+                ShowStreaming(item.Tag == "soundcloud" ? StreamingPanel.Kind.SoundCloud : StreamingPanel.Kind.YouTubeMusic, item.Title);
+                return;
+            }
+
             ShowPlayer();
             RefreshLibrary();
             AnimateView(_player);
@@ -385,6 +393,19 @@ namespace VeriPlayer
             PageTitle.Text = "Добавить по ссылке";
             RefreshCounts();
             AnimateView(_addLink);
+        }
+
+        private readonly Dictionary<StreamingPanel.Kind, StreamingPanel> _streaming = new Dictionary<StreamingPanel.Kind, StreamingPanel>();
+
+        private void ShowStreaming(StreamingPanel.Kind kind, string title)
+        {
+            if (!_streaming.TryGetValue(kind, out var panel))
+                _streaming[kind] = panel = new StreamingPanel(kind);
+
+            ContentHost.Content = panel;
+            PageTitle.Text = title;
+            RefreshCounts();
+            AnimateView(panel);
         }
 
         private void ShowGenerate()
@@ -527,7 +548,7 @@ namespace VeriPlayer
         public void RefreshLibrary()
         {
             if (_player == null) return;
-            if (_view == "addlink" || _view == "generate") return;
+            if (_view == "addlink" || _view == "generate" || _view == "soundcloud" || _view == "ytmusic") return;
 
             var search = SearchInput.Text;
             var data = UserDataService.Current;

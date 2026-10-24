@@ -107,7 +107,8 @@
             </StackPanel>
 
             <ListBox x:Name="Rows" Grid.Row="1" Margin="0,14,0,0" ItemContainerStyle="{StaticResource RowItem}"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="Rows_SelectionChanged">
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="Rows_SelectionChanged"
+                     PreviewMouseRightButtonUp="Rows_RightClick">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid>

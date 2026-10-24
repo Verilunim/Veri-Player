@@ -113,7 +113,8 @@ namespace VeriPlayer.Views
             if (track == null) return;
 
             bool current = AudioService.Current != null && AudioService.Current.Id == track.Id;
-            HeroLabel.Text = current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА";
+            HeroLabel.Text = (current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА") +
+                             (track.Source == SoundCloudService.SourceKey ? "  ·  SOUNDCLOUD" : "");
             HeroTitle.Text = track.DisplayTitle;
             HeroMeta.Text = track.DisplayArtist +
                             (string.IsNullOrWhiteSpace(track.Album) ? "" : " · " + track.Album) +
@@ -421,7 +422,7 @@ namespace VeriPlayer.Views
             if (track.HasVideo)
                 menu.Items.Add(Item("Убрать клип", () => MainWindow.Instance?.ClearClip(track)));
 
-            if (row.Track.Exists)
+            if (row.Track.Exists && !row.Track.IsRemote)
                 menu.Items.Add(Item("Показать в проводнике", () => RevealInExplorer(row.Track.FilePath)));
 
             menu.Items.Add(new Separator());

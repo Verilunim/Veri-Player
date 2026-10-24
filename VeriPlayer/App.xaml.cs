@@ -62,6 +62,8 @@ namespace VeriPlayer
             LibraryService.Init();
             BackgroundService.Init();
             SpotifyService.Init();
+            SoundCloudService.Init();
+            YouTubeMusicService.Init();
             AudioService.Init();
             MusicGenService.Init();
             AudioService.Volume = Settings.Muted ? 0 : Settings.Volume;

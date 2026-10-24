@@ -210,12 +210,14 @@ namespace VeriPlayer.Services
 
             try
             {
-                _reader = CreateReader(track.FilePath);
+                _reader = CreateReader(track);
             }
-            catch
+            catch (Exception ex)
             {
                 _suppressStop = false;
-                Failed?.Invoke("Не удалось открыть «" + track.DisplayTitle + "». Формат не поддерживается или файл повреждён.");
+                Failed?.Invoke(track.IsRemote
+                    ? "Не удалось включить «" + track.DisplayTitle + "»: " + (ex.InnerException ?? ex).Message
+                    : "Не удалось открыть «" + track.DisplayTitle + "». Формат не поддерживается или файл повреждён.");
                 return;
             }
 
@@ -275,8 +277,13 @@ namespace VeriPlayer.Services
             PositionTick?.Invoke(0);
         }
 
-        private static WaveStream CreateReader(string path)
+        private static WaveStream CreateReader(Track track)
         {
+            // поток SoundCloud: ссылка живёт недолго, поэтому берём свежую перед каждым запуском
+            if (track.Source == SoundCloudService.SourceKey)
+                return new MediaFoundationReader(SoundCloudService.ResolveStream(track));
+
+            var path = track.FilePath;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 throw new FileNotFoundException("Файл не найден", path);
 

@@ -204,6 +204,7 @@ namespace VeriPlayer
                 App.Settings.Repeat = AudioService.Repeat;
                 App.SaveSettings();
                 AudioService.Shutdown();
+                LibraryService.Flush();
                 DiscordService.Shutdown();
                 TrayService.Shutdown();
             }
@@ -263,9 +264,13 @@ namespace VeriPlayer
         {
             var look = Look;
             ThemeService.Apply(look);
-            Particles.Kind = Effects.Parse(look.Effect);
+            // облегчённый режим: без частиц и спектра (они рисуются каждый кадр)
+            Particles.Kind = PerformanceService.Particles ? Effects.Parse(look.Effect) : EffectKind.None;
             Particles.Intensity = look.EffectIntensity;
+            SpectrumVisualizer.Enabled = PerformanceService.Visualizer;
+            _player?.ApplyPerformance();
             ApplyBackground();
+            UpdateBackgroundVideo();
             AuroraLayer.Opacity = App.Settings.ReduceMotion ? 0.32 : 0.5;
         }
 
@@ -287,7 +292,7 @@ namespace VeriPlayer
                 var image = Storage.LoadImage(background.FilePath, decode);
                 BackgroundImage.Source = image;
                 BackgroundImage.Visibility = image == null ? Visibility.Collapsed : Visibility.Visible;
-                BackgroundImage.Effect = blur > 1
+                BackgroundImage.Effect = blur > 1 && PerformanceService.BlurBackground
                     ? new BlurEffect { Radius = Math.Min(16, blur * 0.28), KernelType = KernelType.Gaussian }
                     : null;
             }
@@ -908,7 +913,7 @@ namespace VeriPlayer
         private void AnimateView(FrameworkElement view)
         {
             if (view == null) return;
-            if (App.Settings.ReduceMotion) { view.Opacity = 1; return; }
+            if (PerformanceService.ReduceMotion) { view.Opacity = 1; return; }
 
             view.Opacity = 0;
             view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260))
@@ -1186,7 +1191,7 @@ namespace VeriPlayer
         public void UpdateBackgroundVideo()
         {
             if (VideoBackground == null) return;
-            if (!LicenseService.IsProCurrent) { StopVideo(); return; }
+            if (!LicenseService.IsProCurrent || !PerformanceService.Clips) { StopVideo(); return; }
 
             try
             {

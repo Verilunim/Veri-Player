@@ -124,7 +124,7 @@ namespace VeriPlayer.Views
             int index = current ? AudioService.Index : _rows.FindIndex(r => r.Track == track);
             HeroIndex.Text = (Math.Max(0, index) + 1).ToString("00");
 
-            var image = Storage.LoadImage(track.CoverPath, 900);
+            var image = Storage.LoadImage(track.CoverPath, PerformanceService.HeroCoverPixels);
             HeroCover.Source = image;
             HeroCoverInitial.Text = image == null && track.DisplayTitle.Length > 0
                 ? track.DisplayTitle.Substring(0, 1).ToUpperInvariant() : "";
@@ -281,7 +281,7 @@ namespace VeriPlayer.Views
             UpdateHero();
 
             if (_spin == null) return;
-            if (playing) _spin.Resume(this);
+            if (playing && !PerformanceService.ReduceMotion) _spin.Resume(this);
             else _spin.Pause(this);
         }
 
@@ -476,6 +476,15 @@ namespace VeriPlayer.Views
         private static string Pro(string header) => LicenseService.IsProCurrent ? header : header + "   🔒 Pro+";
 
         /// <summary>Замки на кнопках обложки и клипа.</summary>
+        /// <summary>Спектр (настройка «Показывать спектр» и облегчённый режим) и вращение пластинки.</summary>
+        public void ApplyPerformance()
+        {
+            Spectrum.Visibility = PerformanceService.Visualizer ? Visibility.Visible : Visibility.Hidden;
+            if (_spin == null) return;
+            if (AudioService.IsPlaying && !PerformanceService.ReduceMotion) _spin.Resume(this);
+            else _spin.Pause(this);
+        }
+
         public void RefreshProLocks()
         {
             var visibility = LicenseService.IsProCurrent ? Visibility.Collapsed : Visibility.Visible;

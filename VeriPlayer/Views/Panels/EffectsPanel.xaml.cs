@@ -123,6 +123,7 @@ namespace VeriPlayer.Views.Panels
         {
             App.Settings.Visualizer = VisualizerToggle.IsChecked == true;
             App.SaveSettings();
+            MainWindow.Instance?.ApplyAppearance();
         }
 
         private void Motion_Click(object sender, RoutedEventArgs e)

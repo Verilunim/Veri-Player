@@ -213,6 +213,8 @@ namespace VeriPlayer.Models
         public double EffectIntensity { get; set; } = 1.0;
         public bool Visualizer { get; set; } = true;
         public bool ReduceMotion { get; set; }
+        /// <summary>Облегчённый режим: null — определять автоматически по железу.</summary>
+        public bool? LiteMode { get; set; }
 
         public string BackgroundId { get; set; } = "";
         public double BackgroundDim { get; set; } = 0.55;

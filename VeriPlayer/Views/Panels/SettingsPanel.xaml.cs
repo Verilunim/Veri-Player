@@ -27,6 +27,7 @@ namespace VeriPlayer.Views.Panels
             CopyToggle.IsChecked = App.Settings.CopyFilesIntoLibrary;
             MotionToggle.IsChecked = App.Settings.ReduceMotion;
             VisualizerToggle.IsChecked = App.Settings.Visualizer;
+            UpdateLiteHint();
             _guard = false;
 
             var version = typeof(SettingsPanel).Assembly.GetName().Version;
@@ -120,6 +121,26 @@ namespace VeriPlayer.Views.Panels
         {
             App.Settings.Visualizer = VisualizerToggle.IsChecked == true;
             App.SaveSettings();
+            MainWindow.Instance?.ApplyAppearance();
+        }
+
+        private void Lite_Click(object sender, RoutedEventArgs e)
+        {
+            App.Settings.LiteMode = LiteToggle.IsChecked == true;
+            App.SaveSettings();
+            UpdateLiteHint();
+            MainWindow.Instance?.ApplyAppearance();
+        }
+
+        private void UpdateLiteHint()
+        {
+            LiteToggle.IsChecked = PerformanceService.IsLite;
+            LiteHint.Text = "Без анимаций, частиц, спектра и клипов на фоне — меньше нагрузка на процессор и видеокарту. " +
+                            (App.Settings.LiteMode == null
+                                ? (PerformanceService.WeakHardware
+                                    ? "Включён автоматически: " + PerformanceService.Reason + "."
+                                    : "Сейчас выбирается автоматически по железу.")
+                                : "Выбрано вручную.");
         }
 
         private void OpenData_Click(object sender, RoutedEventArgs e)

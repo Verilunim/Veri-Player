@@ -47,6 +47,9 @@
                               Click="Motion_Click" />
                     <CheckBox x:Name="VisualizerToggle" Content="Показывать спектр звука" Margin="0,12,0,0"
                               Click="Visualizer_Click" />
+                    <CheckBox x:Name="LiteToggle" Content="Облегчённый режим для слабых ПК" Margin="0,12,0,0"
+                              Click="Lite_Click" />
+                    <TextBlock x:Name="LiteHint" Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="30,4,0,0" />
                 </StackPanel>
             </Border>
 

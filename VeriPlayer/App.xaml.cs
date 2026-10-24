@@ -56,6 +56,7 @@ namespace VeriPlayer
                 SaveSettings();
             }
 
+            PerformanceService.Detect();
             ThemeService.Apply(Settings);
 
             AuthService.Init();
@@ -107,6 +108,7 @@ namespace VeriPlayer
             try
             {
                 AudioService.Shutdown();
+                LibraryService.Flush();
                 SaveSettings();
             }
             catch { }

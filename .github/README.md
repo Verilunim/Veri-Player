@@ -6,6 +6,7 @@
 - 🎨 8 анимированных фонов (снег, дождь, листья, звёзды...)
 - 🤖 AI-генерация музыки через Suno API
 - 🔗 Шеринг треков через QR-коды и ссылки
+- ☁️ SoundCloud и ▶️ YouTube Music: ваша музыка из аккаунта
 - 🎵 Импорт из Spotify и Yandex Music
 - ⭐ Подписка Pro+ по ключу активации с цифровой подписью
 - 👥 Локальная система аккаунтов с ролями и защищёнными паролями
@@ -16,7 +17,7 @@
 - .NET 8.0 Runtime (включён)
 
 ## Скачать
-Версия 1.3.1.0: [Releases → VeriPlayer.exe (64 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
+Версия 1.4.0.0: [Releases → VeriPlayer.exe (64 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
 
 ## Документация
 - [README.md](README.md) — полная документация

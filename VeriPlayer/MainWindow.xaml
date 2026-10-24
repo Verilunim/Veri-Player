@@ -7,7 +7,7 @@
         Icon="/Assets/logo.png"
         Width="1440" Height="900" MinWidth="1100" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="#050509"
+        Background="{DynamicResource DeepBrush}"
         Foreground="{DynamicResource TextBrush}"
         FontFamily="Segoe UI Variable Display, Segoe UI, Arial"
         FontSize="13.5"
@@ -80,22 +80,22 @@
     <Grid x:Name="Root">
         <!-- ================= фон ================= -->
         <Grid ClipToBounds="True">
-            <Rectangle>
+            <Rectangle Fill="{DynamicResource BgBrush}" />
+            <Rectangle IsHitTestVisible="False">
                 <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#07070D" Offset="0" />
-                        <GradientStop Color="#0B0A18" Offset="0.55" />
-                        <GradientStop Color="#05050A" Offset="1" />
-                    </LinearGradientBrush>
+                    <RadialGradientBrush Center="0.82,0.08" GradientOrigin="0.82,0.08" RadiusX="0.75" RadiusY="0.9">
+                        <GradientStop Color="#26FFFFFF" Offset="0" />
+                        <GradientStop Color="#00FFFFFF" Offset="1" />
+                    </RadialGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
 
             <Image x:Name="BackgroundImage" Stretch="UniformToFill"
                    RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
 
-            <Rectangle x:Name="BackgroundVeil" Fill="#07070D" Opacity="0.55" />
+            <Rectangle x:Name="BackgroundVeil" Fill="#2B2623" Opacity="0.55" />
 
-            <Canvas x:Name="AuroraLayer" IsHitTestVisible="False" Opacity="0.5">
+            <Canvas x:Name="AuroraLayer" IsHitTestVisible="False" Opacity="0.5" Visibility="Collapsed">
                 <Ellipse Width="1000" Height="1000" Canvas.Left="-280" Canvas.Top="-420">
                     <Ellipse.Fill>
                         <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
@@ -134,8 +134,8 @@
             <Rectangle IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <RadialGradientBrush Center="0.5,0.45" RadiusX="0.85" RadiusY="0.85">
-                        <GradientStop Color="#00000000" Offset="0.45" />
-                        <GradientStop Color="#8C000000" Offset="1" />
+                        <GradientStop Color="#00000000" Offset="0.55" />
+                        <GradientStop Color="#33000000" Offset="1" />
                     </RadialGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
@@ -175,19 +175,11 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border Width="42" Height="42" CornerRadius="14" ClipToBounds="True">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.5"
-                                                      Color="Black" />
-                                </Border.Effect>
-                                <Image Source="/Assets/logo.png" Stretch="UniformToFill"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
-                            </Border>
-                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Veri Player" FontSize="17" FontWeight="SemiBold"
+                            <StackPanel Grid.ColumnSpan="2" Margin="8,4,0,0">
+                                <TextBlock Text="veri" FontSize="30" FontWeight="Black" FontStyle="Italic"
                                            Foreground="{DynamicResource TextBrush}" />
-                                <TextBlock Text="эстетичное пространство" FontSize="11"
-                                           Foreground="{DynamicResource TextFaintBrush}" />
+                                <TextBlock Text="MUSIC PLAYER" FontSize="10.5" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFaintBrush}" Margin="2,-2,0,0" />
                             </StackPanel>
                         </Grid>
 
@@ -221,13 +213,13 @@
                             <Button x:Name="BtnAddMusicSide" Style="{StaticResource BtnPrimary}" Click="BtnAddMusic_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="{StaticResource IconPlus}" Width="18" Height="18" Stretch="None"
-                                          Stroke="#0B0B12" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                          Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                                     <TextBlock Text="Добавить музыку" FontWeight="SemiBold" Margin="8,0,0,0" />
                                 </StackPanel>
                             </Button>
 
                             <Border x:Name="UserCard" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="10,10,8,10"
-                                    Background="#12FFFFFF" MouseLeftButtonUp="UserCard_Click" Cursor="Hand">
+                                    Background="#1AFFFFFF" BorderThickness="0" MouseLeftButtonUp="UserCard_Click" Cursor="Hand">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -271,27 +263,28 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock x:Name="PageTitle" Text="Библиотека" Style="{StaticResource TextH2}"
-                                   VerticalAlignment="Center" Margin="26,0,0,0" />
+                        <TextBlock x:Name="PageTitle" Text="Библиотека" FontSize="13" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}" Typography.Capitals="AllSmallCaps"
+                                   VerticalAlignment="Center" Margin="30,0,0,0" />
 
-                        <Border Grid.Column="1" x:Name="SearchBox" Width="330" Height="40" CornerRadius="13"
-                                Background="#0EFFFFFF" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                        <Border Grid.Column="1" x:Name="SearchBox" Width="300" Height="38" CornerRadius="19"
+                                Background="Transparent" BorderBrush="#B3FFFFFF" BorderThickness="1.5"
                                 HorizontalAlignment="Left" Margin="26,0,0,0" VerticalAlignment="Center"
                                 WindowChrome.IsHitTestVisibleInChrome="True">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Path Data="{StaticResource IconSearch}" Style="{StaticResource IconBase}" Width="18" Height="18"
-                                      Stroke="{DynamicResource TextFaintBrush}" Margin="12,0,0,0" />
-                                <TextBox x:Name="SearchInput" Grid.Column="1" BorderThickness="0" Background="Transparent"
-                                         Padding="8,0,12,0" VerticalContentAlignment="Center" VerticalAlignment="Center"
+                                <TextBox x:Name="SearchInput" Grid.Column="0" Style="{StaticResource BareTextBox}"
+                                         Padding="18,0,6,0" VerticalAlignment="Center"
                                          TextChanged="SearchInput_TextChanged" />
-                                <TextBlock x:Name="SearchPlaceholder" Text="Поиск по названию, исполнителю, альбому…"
+                                <TextBlock x:Name="SearchPlaceholder" Text="Поиск музыки"
                                            Foreground="{DynamicResource TextFaintBrush}" FontSize="12.5"
-                                           VerticalAlignment="Center" Margin="8,0,12,0" IsHitTestVisible="False"
+                                           VerticalAlignment="Center" Margin="20,0,6,0" IsHitTestVisible="False"
                                            Panel.ZIndex="2" />
+                                <Path Grid.Column="1" Data="{StaticResource IconSearch}" Style="{StaticResource IconBase}"
+                                      Width="17" Height="17" Stroke="{DynamicResource TextBrush}" Margin="0,0,14,0" />
                             </Grid>
                         </Border>
 
@@ -365,7 +358,7 @@
 
         <!-- ================= модальные окна ================= -->
         <Grid x:Name="OverlayHost" Visibility="Collapsed">
-            <Rectangle x:Name="OverlayDim" Fill="#C7040408" MouseLeftButtonDown="OverlayDim_MouseDown" />
+            <Rectangle x:Name="OverlayDim" Fill="#B32B2623" MouseLeftButtonDown="OverlayDim_MouseDown" />
             <Border x:Name="OverlayCard" Style="{StaticResource GlassPanel}" Margin="40"
                     HorizontalAlignment="Center" VerticalAlignment="Center" MaxHeight="820"
                     Opacity="0" RenderTransformOrigin="0.5,0.5">
@@ -394,7 +387,7 @@
         </Grid>
 
         <!-- ================= обложка на весь экран ================= -->
-        <Grid x:Name="CoverOverlay" Background="#F5040408" Visibility="Collapsed"
+        <Grid x:Name="CoverOverlay" Background="#F52B2623" Visibility="Collapsed"
               MouseLeftButtonDown="CoverOverlay_MouseDown">
             <Image x:Name="CoverFullImage" Stretch="UniformToFill" />
             <Rectangle IsHitTestVisible="False">

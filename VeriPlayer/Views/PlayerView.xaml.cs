@@ -98,6 +98,62 @@ namespace VeriPlayer.Views
             HeaderSubtitle.Text = subtitle;
 
             UpdateEmptyState(context);
+            UpdateHero();
+        }
+
+        // ================================================================== главный блок
+
+        /// <summary>Трек в главном блоке: играющий, а если ничего не играет — первый в списке.</summary>
+        private Track HeroTrack => AudioService.Current ?? _rows.FirstOrDefault(r => !r.Missing)?.Track ?? _rows.FirstOrDefault()?.Track;
+
+        private void UpdateHero()
+        {
+            var track = HeroTrack;
+            Hero.Visibility = track == null ? Visibility.Collapsed : Visibility.Visible;
+            if (track == null) return;
+
+            bool current = AudioService.Current != null && AudioService.Current.Id == track.Id;
+            HeroLabel.Text = current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА";
+            HeroTitle.Text = track.DisplayTitle;
+            HeroMeta.Text = track.DisplayArtist +
+                            (string.IsNullOrWhiteSpace(track.Album) ? "" : " · " + track.Album) +
+                            (track.Duration > 0 ? " · " + track.DurationText : "");
+
+            // номер — позиция в очереди (или в списке), как крупное «03» в примере
+            int index = current ? AudioService.Index : _rows.FindIndex(r => r.Track == track);
+            HeroIndex.Text = (Math.Max(0, index) + 1).ToString("00");
+
+            var image = Storage.LoadImage(track.CoverPath, 900);
+            HeroCover.Source = image;
+            HeroCoverInitial.Text = image == null && track.DisplayTitle.Length > 0
+                ? track.DisplayTitle.Substring(0, 1).ToUpperInvariant() : "";
+            HeroCoverFill.Fill = image == null ? ThemeService.CoverBrush(track.Id) : (Brush)new SolidColorBrush(Color.FromRgb(0xA8, 0x9C, 0x93));
+
+            if (HeroPlay.Template?.FindName("HeroPlayGlyph", HeroPlay) is Path glyph)
+                glyph.Data = (Geometry)FindResource(current && AudioService.IsPlaying ? "IconPause" : "IconPlay");
+            if (HeroPlay.Template?.FindName("HeroPlayText", HeroPlay) is TextBlock label)
+                label.Text = current && AudioService.IsPlaying ? "ПАУЗА" : "СЛУШАТЬ";
+
+            // следующие три трека после героя
+            var source = current && AudioService.Queue.Count > 0 ? AudioService.Queue : _rows.Select(r => r.Track).ToList();
+            int start = Math.Max(0, current ? AudioService.Index : source.IndexOf(track));
+            UpNext.ItemsSource = source.Skip(start + 1).Concat(source.Take(start)).Where(t => t.Id != track.Id).Take(3).ToList();
+        }
+
+        private void HeroPlay_Click(object sender, RoutedEventArgs e)
+        {
+            var track = HeroTrack;
+            if (track == null) return;
+            if (AudioService.Current != null && AudioService.Current.Id == track.Id) AudioService.TogglePlay();
+            else Play(_rows.FirstOrDefault(r => r.Track == track));
+        }
+
+        private void UpNext_Click(object sender, MouseButtonEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.Tag is not Track track) return;
+            var row = _rows.FirstOrDefault(r => r.Track.Id == track.Id);
+            if (row != null) Play(row);
+            else AudioService.PlayTrack(track);
         }
 
         private void UpdateEmptyState(string context)
@@ -178,6 +234,7 @@ namespace VeriPlayer.Views
                 SeekSlider.Value = 0;
                 TrackActions.Visibility = Visibility.Collapsed;
                 SyncRows();
+                UpdateHero();
                 return;
             }
 
@@ -211,6 +268,7 @@ namespace VeriPlayer.Views
                 : "Клип на фон песни (MP4, до 5 секунд)";
 
             SyncRows();
+            UpdateHero();
         }
 
         public void SyncPlayState()
@@ -219,6 +277,7 @@ namespace VeriPlayer.Views
 
             if (PlayButton.Template?.FindName("Glyph", PlayButton) is Path glyph)
                 glyph.Data = (Geometry)FindResource(playing ? "IconPause" : "IconPlay");
+            UpdateHero();
 
             if (_spin == null) return;
             if (playing) _spin.Resume(this);

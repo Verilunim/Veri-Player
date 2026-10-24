@@ -11,7 +11,7 @@
         <Button x:Name="ImportButton" Style="{StaticResource BtnPrimary}" HorizontalAlignment="Left"
                 Margin="0,14,0,0" Click="Import_Click">
             <StackPanel Orientation="Horizontal">
-                <Path Data="{StaticResource IconImage}" Width="17" Height="17" Stretch="None" Stroke="#0B0B12"
+                <Path Data="{StaticResource IconImage}" Width="17" Height="17" Stretch="None" Stroke="White"
                       StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       StrokeLineJoin="Round" />
                 <TextBlock Text="Загрузить изображение" FontWeight="SemiBold" Margin="8,0,0,0" />

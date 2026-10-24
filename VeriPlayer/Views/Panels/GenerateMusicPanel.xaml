@@ -24,7 +24,7 @@
                                  ToolTip="Получите на sunoapi.com (от $5)" />
                     </StackPanel>
                     <Button Grid.Column="1" Style="{StaticResource BtnGhost}" Content="Сохранить" 
-                            Margin="14,20,0,0" Height="32" Click="SaveApiKey_Click" />
+                            Margin="14,20,0,0" Padding="16,0" Height="36" Click="SaveApiKey_Click" />
                 </Grid>
             </Border>
 

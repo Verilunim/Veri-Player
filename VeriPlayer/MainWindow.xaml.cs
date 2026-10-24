@@ -79,7 +79,7 @@ namespace VeriPlayer
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            AnimateBlobs();
+            // фоновые «пятна» скрыты в новом дизайне — их бесконечные анимации грузили процессор впустую
             BuildDropHint();
             ApplyAppearance();
 

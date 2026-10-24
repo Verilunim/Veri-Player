@@ -152,23 +152,51 @@ namespace VeriPlayer.Controls
 
         private static void OnKindChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is ParticleField field) field.Rebuild();
+            if (d is ParticleField field)
+            {
+                field.Rebuild();
+                field.UpdateRendering();
+            }
         }
+
+        private bool _loaded;
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (_attached) return;
-            _attached = true;
-            _lastFrame = _clock.Elapsed.TotalSeconds;
-            CompositionTarget.Rendering += OnFrame;
+            _loaded = true;
+            IsVisibleChanged -= OnVisibleChanged;
+            IsVisibleChanged += OnVisibleChanged;
             Rebuild();
+            UpdateRendering();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (!_attached) return;
-            _attached = false;
-            CompositionTarget.Rendering -= OnFrame;
+            _loaded = false;
+            UpdateRendering();
+        }
+
+        private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) => UpdateRendering();
+
+        /// <summary>
+        /// Подписка на каждый кадр держит рендер WPF в постоянной работе, поэтому включаем её,
+        /// только когда эффект выбран и окно видно (не свёрнуто в трей).
+        /// </summary>
+        private void UpdateRendering()
+        {
+            bool want = _loaded && IsVisible && Kind != EffectKind.None;
+            if (want == _attached) return;
+            _attached = want;
+            if (want)
+            {
+                _lastFrame = _clock.Elapsed.TotalSeconds;
+                CompositionTarget.Rendering += OnFrame;
+            }
+            else
+            {
+                CompositionTarget.Rendering -= OnFrame;
+                InvalidateVisual();
+            }
         }
 
         private double Area => Math.Max(0, ActualWidth * ActualHeight);

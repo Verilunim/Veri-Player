@@ -12,16 +12,17 @@ namespace VeriPlayer.Views.Panels
 {
     public partial class ThemePanel : UserControl, IModalPanel
     {
-        private static readonly (string Name, double Hue, double Sat)[] Palette =
+        // спокойные природные оттенки под тёплый минималистичный фон
+        private static readonly (string Name, double Hue, double Sat, double Val)[] Palette =
         {
-            ("Лаванда", 268, 0.68),
-            ("Океан", 212, 0.72),
-            ("Изумруд", 158, 0.62),
-            ("Закат", 18, 0.78),
-            ("Роза", 336, 0.66),
-            ("Золото", 44, 0.72),
-            ("Небо", 196, 0.60),
-            ("Фуксия", 300, 0.70)
+            ("Олива", 78, 0.37, 0.37),
+            ("Шалфей", 110, 0.22, 0.48),
+            ("Терракота", 16, 0.52, 0.62),
+            ("Глина", 28, 0.38, 0.48),
+            ("Песок", 36, 0.30, 0.74),
+            ("Графит", 30, 0.10, 0.36),
+            ("Сланец", 205, 0.22, 0.44),
+            ("Слива", 330, 0.28, 0.42)
         };
 
         private readonly DispatcherTimer _autoTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
@@ -55,7 +56,7 @@ namespace VeriPlayer.Views.Panels
         {
             foreach (var entry in Palette)
             {
-                var color = ThemeService.Hsv(entry.Hue, entry.Sat, 1.0);
+                var color = ThemeService.Hsv(entry.Hue, entry.Sat, entry.Val);
                 var ellipse = new Ellipse
                 {
                     Width = 22,
@@ -74,11 +75,13 @@ namespace VeriPlayer.Views.Panels
                 };
                 double hue = entry.Hue;
                 double sat = entry.Sat;
+                double val = entry.Val;
                 button.Click += (s, e) =>
                 {
                     _guard = true;
                     Wheel.Hue = hue;
                     Wheel.Saturation = sat;
+                    ValueSlider.Value = Math.Max(35, val * 100);
                     _guard = false;
                     Apply();
                 };

@@ -49,16 +49,10 @@
                     </Canvas>
 
                     <StackPanel Margin="46,44,40,40">
-                        <StackPanel Orientation="Horizontal">
-                            <Border Width="44" Height="44" CornerRadius="14" ClipToBounds="True">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.45" Color="Black" />
-                                </Border.Effect>
-                                <Image Source="/Assets/logo.png" Stretch="UniformToFill"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
-                            </Border>
-                            <TextBlock Text="Veri Player" FontSize="19" FontWeight="SemiBold" Foreground="White"
-                                       VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="veri" FontSize="34" FontWeight="Black" FontStyle="Italic" Foreground="White" />
+                            <TextBlock Text="MUSIC PLAYER" FontSize="11" FontWeight="SemiBold" Foreground="#D9FFFFFF"
+                                       Margin="2,-2,0,0" />
                         </StackPanel>
 
                         <TextBlock Text="Своя музыка.&#10;Своя атмосфера." FontSize="34" FontWeight="Bold"

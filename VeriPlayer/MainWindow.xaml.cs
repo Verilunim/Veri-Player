@@ -292,7 +292,8 @@ namespace VeriPlayer
                     : null;
             }
 
-            BackgroundVeil.Opacity = look.BackgroundDim;
+            // затемнение нужно только поверх своей картинки — без неё фон остаётся светлым
+            BackgroundVeil.Opacity = background == null ? 0 : look.BackgroundDim;
         }
 
         // ================================================================== Pro+
@@ -939,9 +940,9 @@ namespace VeriPlayer
             Color accent;
             switch (kind)
             {
-                case "ok": accent = Color.FromRgb(0x4A, 0xDE, 0x9B); break;
-                case "error": accent = Color.FromRgb(0xFF, 0x5A, 0x6E); break;
-                case "warn": accent = Color.FromRgb(0xFF, 0xC4, 0x6B); break;
+                case "ok": accent = Color.FromRgb(0x55, 0x5F, 0x3C); break;
+                case "error": accent = Color.FromRgb(0xB5, 0x48, 0x3F); break;
+                case "warn": accent = Color.FromRgb(0xC9, 0x8A, 0x2B); break;
                 default: accent = ThemeService.AccentColor; break;
             }
 
@@ -956,7 +957,7 @@ namespace VeriPlayer
             var label = new TextBlock
             {
                 Text = text,
-                Foreground = (Brush)FindResource("TextBrush"),
+                Foreground = new SolidColorBrush(Color.FromRgb(0x2D, 0x29, 0x26)),
                 FontSize = 13,
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 460,
@@ -975,7 +976,7 @@ namespace VeriPlayer
             var border = new Border
             {
                 CornerRadius = new CornerRadius(14),
-                Background = new SolidColorBrush(Color.FromArgb(0xF2, 12, 12, 19)),
+                Background = new SolidColorBrush(Color.FromRgb(0xFB, 0xF8, 0xF5)),
                 BorderBrush = new SolidColorBrush(Color.FromArgb(0x24, 255, 255, 255)),
                 BorderThickness = new Thickness(1),
                 Padding = new Thickness(14, 12, 20, 12),

@@ -186,14 +186,16 @@ namespace VeriPlayer.Models
     public class AppSettings
     {
         // ---- appearance ----
-        public double Hue { get; set; } = 268;
-        public double Saturation { get; set; } = 0.68;
-        public double Value { get; set; } = 1.0;
-        public double SecondHueOffset { get; set; } = 46;
+        /// <summary>Версия оформления: при смене дизайна старые цвета один раз сбрасываются на новые.</summary>
+        public int DesignVersion { get; set; }
+        public double Hue { get; set; } = 78;
+        public double Saturation { get; set; } = 0.37;
+        public double Value { get; set; } = 0.37;
+        public double SecondHueOffset { get; set; } = 12;
         public bool AutoHue { get; set; }
         public double AutoHueSpeed { get; set; } = 18;
 
-        public string Effect { get; set; } = "snow";
+        public string Effect { get; set; } = "none";
         public double EffectIntensity { get; set; } = 1.0;
         public bool Visualizer { get; set; } = true;
         public bool ReduceMotion { get; set; }

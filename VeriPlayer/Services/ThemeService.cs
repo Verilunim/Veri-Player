@@ -39,7 +39,8 @@ namespace VeriPlayer.Services
             Set("AccentGlowBrush", Solid(Alpha(accent, 0x66)));
             Set("AccentGlowBrush2", Solid(Alpha(accent2, 0x55)));
             Set("AccentBorderBrush", Solid(Alpha(accent, 0x8C)));
-            Set("AccentTextBrush", Solid(Hsv(hue, Math.Min(1, sat * 0.75), 1.0)));
+            // светлый оттенок акцента для текста: на тёплом фоне он читается лучше яркого
+            Set("AccentTextBrush", Solid(Hsv(hue, Math.Min(1, sat * 0.35), 1.0)));
 
             var horizontal = new LinearGradientBrush
             {

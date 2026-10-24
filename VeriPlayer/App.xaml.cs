@@ -20,6 +20,8 @@ namespace VeriPlayer
     {
         public static AppSettings Settings { get; private set; } = new AppSettings();
 
+        private const int CurrentDesign = 2;
+
         public static new App Current => (App)Application.Current;
 
         public static void SaveSettings()
@@ -39,6 +41,20 @@ namespace VeriPlayer
             Settings.EffectIntensity = Math.Max(0.15, Math.Min(1.2, Settings.EffectIntensity));
             Settings.BackgroundDim = Math.Max(0, Math.Min(0.9, Settings.BackgroundDim));
             Settings.BackgroundBlur = Math.Max(0, Math.Min(60, Settings.BackgroundBlur));
+
+            // новый минималистичный дизайн: прежние неоновые цвета и эффекты сбрасываем один раз
+            if (Settings.DesignVersion < CurrentDesign)
+            {
+                var fresh = new AppSettings();
+                Settings.Hue = fresh.Hue;
+                Settings.Saturation = fresh.Saturation;
+                Settings.Value = fresh.Value;
+                Settings.SecondHueOffset = fresh.SecondHueOffset;
+                Settings.AutoHue = false;
+                Settings.Effect = fresh.Effect;
+                Settings.DesignVersion = CurrentDesign;
+                SaveSettings();
+            }
 
             ThemeService.Apply(Settings);
 

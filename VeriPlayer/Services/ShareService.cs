@@ -71,7 +71,7 @@ namespace VeriPlayer.Services
 
             try
             {
-                if (includeFile && track.Exists && new FileInfo(track.FilePath).Length <= MaxEmbedBytes)
+                if (includeFile && track.Exists && !track.IsRemote && new FileInfo(track.FilePath).Length <= MaxEmbedBytes)
                     payload.Data = Convert.ToBase64String(File.ReadAllBytes(track.FilePath));
             }
             catch (Exception ex)

@@ -421,7 +421,7 @@ namespace VeriPlayer.Views
             if (track.HasVideo)
                 menu.Items.Add(Item("Убрать клип", () => MainWindow.Instance?.ClearClip(track)));
 
-            if (row.Track.Exists)
+            if (row.Track.Exists && !row.Track.IsRemote)
                 menu.Items.Add(Item("Показать в проводнике", () => RevealInExplorer(row.Track.FilePath)));
 
             menu.Items.Add(new Separator());

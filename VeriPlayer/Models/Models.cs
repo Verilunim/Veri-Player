@@ -101,8 +101,20 @@ namespace VeriPlayer.Models
         public int Plays { get; set; }
         public DateTime LastPlayedAt { get; set; }
 
+        /// <summary>Откуда трек: пусто — локальный файл, "soundcloud" — поток из SoundCloud.</summary>
+        public string Source { get; set; } = "";
+        /// <summary>Идентификатор трека в сервисе (для SoundCloud — urn).</summary>
+        public string RemoteId { get; set; } = "";
+        /// <summary>Страница трека в сервисе — по правилам SoundCloud на неё нужна ссылка.</summary>
+        public string WebUrl { get; set; } = "";
+        /// <summary>Адрес обложки в сервисе; локальная копия появляется в CoverPath.</summary>
+        public string ArtworkUrl { get; set; } = "";
+
         [JsonIgnore]
-        public bool Exists => !string.IsNullOrWhiteSpace(FilePath) && File.Exists(FilePath);
+        public bool IsRemote => !string.IsNullOrEmpty(Source);
+
+        [JsonIgnore]
+        public bool Exists => IsRemote || (!string.IsNullOrWhiteSpace(FilePath) && File.Exists(FilePath));
 
         [JsonIgnore]
         public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath) && File.Exists(CoverPath);

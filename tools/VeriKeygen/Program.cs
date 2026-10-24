@@ -88,6 +88,54 @@ switch (command)
         return 0;
     }
 
+    case "staff":
+    {
+        // пароли встроенных аккаунтов команды: вводятся скрыто, в код попадают только соль и хэш
+        var target = Option("--out") ?? FindStaffFile();
+        if (target == null)
+        {
+            Console.Error.WriteLine("Не нашёл VeriPlayer/Services/BuiltInStaff.cs. Запустите из папки проекта или укажите --out <путь>.");
+            return 1;
+        }
+
+        var staff = new (string Nick, string Role, string Bio)[]
+        {
+            ("Verilunim", "Owner", "Основатель Veri Player. Следит за порядком и развитием проекта."),
+            ("Jomapel", "CoOwner", "Со-владелец Veri Player. Помогает владельцу и следит за пользователями.")
+        };
+
+        var entries = new List<string>();
+        foreach (var member in staff)
+        {
+            var password = AskPassword(member.Nick);
+            var salt = RandomNumberGenerator.GetBytes(16);
+            const int iterations = 600000; // как в AuthService
+            var hash = Rfc2898DeriveBytes.Pbkdf2(System.Text.Encoding.UTF8.GetBytes(password), salt, iterations, HashAlgorithmName.SHA256, 32);
+            entries.Add(
+                "            new Entry\n            {\n" +
+                "                Nick = \"" + member.Nick + "\",\n" +
+                "                Role = Models.UserRole." + member.Role + ",\n" +
+                "                Salt = \"" + Convert.ToBase64String(salt) + "\",\n" +
+                "                Hash = \"" + Convert.ToBase64String(hash) + "\",\n" +
+                "                Iterations = " + iterations + ",\n" +
+                "                Bio = \"" + member.Bio + "\"\n" +
+                "            }");
+        }
+
+        var code =
+            "// Этот файл создаёт «VeriKeygen staff». Здесь только соль и PBKDF2-хэш паролей, самих паролей нет.\n" +
+            "namespace VeriPlayer.Services\n{\n    public static class BuiltInStaff\n    {\n" +
+            "        public sealed class Entry\n        {\n" +
+            "            public string Nick;\n            public Models.UserRole Role;\n            public string Salt;\n" +
+            "            public string Hash;\n            public int Iterations;\n            public string Bio;\n        }\n\n" +
+            "        public static readonly Entry[] All =\n        {\n" + string.Join(",\n", entries) + "\n        };\n    }\n}\n";
+        File.WriteAllText(target, code.Replace("\n", Environment.NewLine), new System.Text.UTF8Encoding(false));
+        Console.WriteLine();
+        Console.WriteLine("Готово: " + target);
+        Console.WriteLine("Пересоберите программу — пароли применятся в каждой установке при следующем запуске.");
+        return 0;
+    }
+
     default:
         Console.WriteLine("VeriKeygen — выпуск ключей Veri Player Pro+");
         Console.WriteLine();
@@ -96,9 +144,53 @@ switch (command)
         Console.WriteLine("  issue <ник> [--days N]   ключ на N дней (по умолчанию 30)");
         Console.WriteLine("  issue <ник> --until yyyy-MM-dd");
         Console.WriteLine("  issue <ник> --lifetime   бессрочный ключ");
+        Console.WriteLine("  staff                    задать пароли встроенных Verilunim и Jomapel");
         Console.WriteLine();
         Console.WriteLine("  --key <путь>             другой файл закрытого ключа (по умолчанию " + defaultKeyPath + ")");
         return 0;
+}
+
+static string FindStaffFile()
+{
+    for (var dir = new DirectoryInfo(Directory.GetCurrentDirectory()); dir != null; dir = dir.Parent)
+    {
+        var candidate = Path.Combine(dir.FullName, "VeriPlayer", "Services", "BuiltInStaff.cs");
+        if (File.Exists(candidate)) return candidate;
+    }
+    return null;
+}
+
+/// <summary>Скрытый ввод пароля с подтверждением; хэш в открытом exe, поэтому пароль нужен длинный.</summary>
+static string AskPassword(string nick)
+{
+    while (true)
+    {
+        var first = ReadHidden("Пароль для " + nick + " (минимум 12 символов): ");
+        if (first.Length < 12) { Console.WriteLine("  Слишком коротко — нужно минимум 12 символов."); continue; }
+        if (string.Equals(first, nick, StringComparison.OrdinalIgnoreCase)) { Console.WriteLine("  Пароль не должен совпадать с ником."); continue; }
+        var second = ReadHidden("Повторите пароль для " + nick + ": ");
+        if (first != second) { Console.WriteLine("  Пароли не совпадают, попробуйте ещё раз."); continue; }
+        return first;
+    }
+}
+
+static string ReadHidden(string prompt)
+{
+    Console.Write(prompt);
+    var text = new System.Text.StringBuilder();
+    while (true)
+    {
+        var key = Console.ReadKey(intercept: true);
+        if (key.Key == ConsoleKey.Enter) break;
+        if (key.Key == ConsoleKey.Backspace)
+        {
+            if (text.Length > 0) { text.Length--; Console.Write("\b \b"); }
+            continue;
+        }
+        if (!char.IsControl(key.KeyChar)) { text.Append(key.KeyChar); Console.Write('*'); }
+    }
+    Console.WriteLine();
+    return text.ToString();
 }
 
 static ECDsa LoadPrivate(string path)

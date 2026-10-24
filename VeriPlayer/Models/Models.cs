@@ -30,6 +30,8 @@ namespace VeriPlayer.Models
         /// <summary>Неудачные попытки входа подряд и время, до которого вход заблокирован.</summary>
         /// <summary>После входа нужно сразу задать новый пароль (стандартный «пароль = ник»).</summary>
         public bool MustChangePassword { get; set; }
+        /// <summary>Какой пароль из сборки (его хэш) уже применён к встроенному аккаунту команды.</summary>
+        public string BuiltInCredential { get; set; } = "";
         public int FailedLogins { get; set; }
         public DateTime LockoutUntil { get; set; }
         /// <summary>Активированный ключ Pro+ (проверяется подписью при каждом запуске).</summary>

@@ -31,8 +31,58 @@ namespace VeriPlayer.Services
         {
             Users = Storage.LoadProtected(Storage.UsersFile, new List<UserAccount>()) ?? new List<UserAccount>();
             RequireChangeOfDefaultPasswords();
+            EnsureBuiltInStaff();
             Save();
         }
+
+        /// <summary>
+        /// Владелец и со-владелец встроены в программу (только хэш пароля, см. BuiltInStaff) и есть
+        /// в каждой установке — поэтому стать владельцем чужой копии через «первый запуск» нельзя.
+        /// </summary>
+        private static void EnsureBuiltInStaff()
+        {
+            foreach (var entry in BuiltInStaff.All)
+            {
+                var user = Users.FirstOrDefault(u => string.Equals(u.Nick, entry.Nick, StringComparison.OrdinalIgnoreCase));
+                if (user == null)
+                {
+                    user = new UserAccount { Nick = entry.Nick, Bio = entry.Bio ?? "", CreatedAt = DateTime.Now };
+                    user.Activity.Add(new ActivityEntry { Kind = "system", Text = "Аккаунт создан системой" });
+                    Users.Add(user);
+                }
+
+                // Пароль из сборки ставим один раз на каждую его версию: потом владелец аккаунта
+                // может сменить его в профиле. Аккаунт с этим ником, созданный кем-то другим
+                // до обновления, при этом тоже получает пароль владельца.
+                if (user.BuiltInCredential != entry.Hash)
+                {
+                    user.PasswordSalt = entry.Salt;
+                    user.PasswordHash = entry.Hash;
+                    user.PasswordIterations = entry.Iterations;
+                    user.MustChangePassword = false;
+                    user.FailedLogins = 0;
+                    user.LockoutUntil = default;
+                    user.BuiltInCredential = entry.Hash;
+                    LogActivity(user, "security", "Установлен пароль встроенного аккаунта");
+                }
+
+                if (user.Role != entry.Role) user.Role = entry.Role;
+                user.IsBanned = false;
+            }
+
+            if (BuiltInStaff.All.Length == 0) return;
+
+            // кто стал владельцем через «первый запуск» прежних версий — теперь обычный пользователь
+            foreach (var user in Users.Where(u => u.Role == UserRole.Owner && !IsBuiltIn(u) &&
+                                                  u.Activity.Any(a => a.Text == "Аккаунт владельца создан")))
+            {
+                user.Role = UserRole.User;
+                LogActivity(user, "role", "Роль владельца снята: владелец встроен в программу");
+            }
+        }
+
+        public static bool IsBuiltIn(UserAccount user) =>
+            user != null && BuiltInStaff.All.Any(e => string.Equals(e.Nick, user.Nick, StringComparison.OrdinalIgnoreCase));
 
         private const string DefaultResetMark = "Стандартный пароль сброшен";
 
@@ -370,6 +420,7 @@ namespace VeriPlayer.Services
         public static string Delete(UserAccount user)
         {
             if (user == null) return "Пользователь не найден.";
+            if (IsBuiltIn(user)) return "Встроенный аккаунт команды удалить нельзя.";
             if (user.Role == UserRole.Owner && Users.Count(u => u.Role == UserRole.Owner) <= 1)
                 return "Нельзя удалить единственного владельца.";
 

@@ -7,7 +7,7 @@
     <StackPanel Margin="26,4,26,24" Width="430">
         <StackPanel Orientation="Horizontal">
             <Border Width="40" Height="40" CornerRadius="13" Background="#26FF5A6E" VerticalAlignment="Top">
-                <Path Data="{StaticResource IconTrash}" Width="20" Height="20" Stretch="None" Stroke="#FFB3BD"
+                <Path Data="{StaticResource IconTrash}" Width="20" Height="20" Stretch="Uniform" Stroke="#FFB3BD"
                       StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>

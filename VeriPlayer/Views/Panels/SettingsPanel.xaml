@@ -27,7 +27,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <Button Style="{StaticResource BtnGhost}" Click="OpenData_Click">
                             <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconFolder}" Width="17" Height="17" Stretch="None"
+                                <Path Data="{StaticResource IconFolder}" Width="17" Height="17" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                       StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round" />

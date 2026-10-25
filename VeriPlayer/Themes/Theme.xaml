@@ -827,7 +827,7 @@
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
                                 <Path x:Name="Arrow" Grid.Column="1" Data="{StaticResource IconChevronRight}"
-                                      Width="14" Height="14" Stretch="None" Margin="14,0,0,0"
+                                      Width="11" Height="11" Stretch="Uniform" Margin="14,0,0,0"
                                       Stroke="{DynamicResource TextFaintBrush}" StrokeThickness="1.6"
                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                                       Visibility="Collapsed" />

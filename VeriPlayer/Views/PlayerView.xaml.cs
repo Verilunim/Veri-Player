@@ -36,7 +36,14 @@ namespace VeriPlayer.Views
 
             InitSort();
 
-            AudioService.PositionTick += OnPosition;
+            // подписка живёт, пока плеер на экране: после ухода на другую вкладку и возврата
+            // её нужно восстановить, иначе полоса перемотки и время останавливались
+            Loaded += (s, e) =>
+            {
+                AudioService.PositionTick -= OnPosition;
+                AudioService.PositionTick += OnPosition;
+                OnPosition(AudioService.Position);
+            };
             Unloaded += (s, e) => AudioService.PositionTick -= OnPosition;
 
             Loaded += (s, e) =>

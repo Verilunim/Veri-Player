@@ -148,7 +148,7 @@
 
                     <ToggleButton Grid.Column="5" Style="{StaticResource MiniToggle}" IsChecked="{Binding IsFavorite, Mode=OneWay}"
                                   Click="RowFavorite_Click" ToolTip="В избранное" Width="34" Height="34">
-                        <Path Data="{StaticResource IconHeart}" Width="17" Height="17" Stretch="None" StrokeThickness="1.6"
+                        <Path Data="{StaticResource IconHeart}" Width="17" Height="17" Stretch="Uniform" StrokeThickness="1.6"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round">
                             <Path.Style>
                                 <Style TargetType="Path">
@@ -303,7 +303,7 @@
                 </ComboBox>
                 <Button Style="{StaticResource BtnPrimary}" Margin="10,0,0,0" Click="Add_Click">
                     <StackPanel Orientation="Horizontal">
-                        <Path Data="{StaticResource IconPlus}" Width="17" Height="17" Stretch="None"
+                        <Path Data="{StaticResource IconPlus}" Width="17" Height="17" Stretch="Uniform"
                               Stroke="White" StrokeThickness="2.1" StrokeStartLineCap="Round"
                               StrokeEndLineCap="Round" />
                         <TextBlock Text="Добавить" FontWeight="SemiBold" Margin="8,0,0,0" />
@@ -455,7 +455,7 @@
                                 HorizontalAlignment="Center">
                         <ToggleButton x:Name="ShuffleButton" Style="{StaticResource MiniToggle}"
                                       Click="Shuffle_Click" ToolTip="Перемешать">
-                            <Path Data="{StaticResource IconShuffle}" Width="18" Height="18" Stretch="None"
+                            <Path Data="{StaticResource IconShuffle}" Width="18" Height="18" Stretch="Uniform"
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                   StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                   StrokeLineJoin="Round" />
@@ -463,7 +463,7 @@
 
                         <Button Style="{StaticResource BtnIcon}" Click="Prev_Click" ToolTip="Предыдущий">
                             <Path Data="{StaticResource IconPrev}" Width="22" Height="22" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  Stretch="None" />
+                                  Stretch="Uniform" />
                         </Button>
 
                         <Button x:Name="PlayButton" Width="54" Height="54" Margin="6,0" Cursor="Hand" Click="Play_Click"
@@ -492,13 +492,13 @@
 
                         <Button Style="{StaticResource BtnIcon}" Click="Next_Click" ToolTip="Следующий">
                             <Path Data="{StaticResource IconNext}" Width="22" Height="22" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  Stretch="None" />
+                                  Stretch="Uniform" />
                         </Button>
 
                         <ToggleButton x:Name="RepeatToggle" Style="{StaticResource MiniToggle}"
                                       Click="Repeat_Click" ToolTip="Повтор">
                             <Grid>
-                                <Path Data="{StaticResource IconRepeat}" Width="18" Height="18" Stretch="None"
+                                <Path Data="{StaticResource IconRepeat}" Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                       StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round" />
@@ -515,7 +515,7 @@
                         <ToggleButton x:Name="MuteButton" Style="{StaticResource MiniToggle}" Click="Mute_Click"
                                       ToolTip="Без звука">
                             <Path x:Name="VolumeGlyph" Data="{StaticResource IconVolume}" Width="18" Height="18"
-                                  Stretch="None"
+                                  Stretch="Uniform"
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                   StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                   StrokeLineJoin="Round" />
@@ -526,7 +526,7 @@
 
                         <ToggleButton x:Name="NowFavorite" Style="{StaticResource MiniToggle}"
                                       Margin="14,0,0,0" Click="NowFavorite_Click" ToolTip="Добавить в избранное">
-                            <Path Data="{StaticResource IconHeart}" Width="19" Height="19" Stretch="None" StrokeThickness="1.6"
+                            <Path Data="{StaticResource IconHeart}" Width="19" Height="19" Stretch="Uniform" StrokeThickness="1.6"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round">
                                 <Path.Style>
                                     <Style TargetType="Path">

@@ -43,7 +43,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Path Data="{Binding Icon}" Width="21" Height="21" Stretch="None" StrokeThickness="1.6"
+                <Path Data="{Binding Icon}" Width="21" Height="21" Stretch="Uniform" StrokeThickness="1.6"
                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
                 <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="13,0,0,0" VerticalAlignment="Center"
@@ -65,7 +65,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Path Data="{StaticResource IconWave}" Width="20" Height="20" Stretch="None" StrokeThickness="1.6"
+                <Path Data="{StaticResource IconWave}" Width="20" Height="20" Stretch="Uniform" StrokeThickness="1.6"
                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
                 <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="13,0,0,0" VerticalAlignment="Center"
@@ -212,7 +212,7 @@
                         <StackPanel Grid.Row="3" Margin="0,14,0,0">
                             <Button x:Name="BtnAddMusicSide" Style="{StaticResource BtnPrimary}" Click="BtnAddMusic_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <Path Data="{StaticResource IconPlus}" Width="18" Height="18" Stretch="None"
+                                    <Path Data="{StaticResource IconPlus}" Width="18" Height="18" Stretch="Uniform"
                                           Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                                     <TextBlock Text="Добавить музыку" FontWeight="SemiBold" Margin="8,0,0,0" />
                                 </StackPanel>

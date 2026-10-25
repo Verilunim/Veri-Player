@@ -8,7 +8,7 @@
         <StackPanel Orientation="Horizontal">
             <Border Width="44" Height="44" CornerRadius="14" Background="{DynamicResource AccentGradientBrush}"
                     VerticalAlignment="Top">
-                <Path Data="{StaticResource IconSparkle}" Width="22" Height="22" Stretch="None" Stroke="White"
+                <Path Data="{StaticResource IconSparkle}" Width="22" Height="22" Stretch="Uniform" Stroke="White"
                       StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>

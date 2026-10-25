@@ -84,7 +84,8 @@ namespace VeriPlayer.Services
 
         private static async Task<List<Result>> OpenverseAsync(string query, CancellationToken ct)
         {
-            var url = "https://api.openverse.org/v1/audio/?category=music&page_size=30&q=" + Uri.EscapeDataString(query);
+            // без ключа Openverse отдаёт не больше 20 результатов, на большее отвечает 401
+            var url = "https://api.openverse.org/v1/audio/?category=music&page_size=20&q=" + Uri.EscapeDataString(query);
             using var doc = await GetJsonAsync(url, ct).ConfigureAwait(false);
             var list = new List<Result>();
             if (!doc.RootElement.TryGetProperty("results", out var items) || items.ValueKind != JsonValueKind.Array) return list;

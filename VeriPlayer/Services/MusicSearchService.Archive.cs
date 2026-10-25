@@ -53,6 +53,9 @@ namespace VeriPlayer.Services
                     var name = Str(f, "name");
                     var title = Str(f, "title");
                     if (title.Length == 0) title = System.IO.Path.GetFileNameWithoutExtension(name);
+                    // часовые эфиры и сборники — не песни, в поиске они только мешают
+                    var length = ParseLength(Str(f, "length"));
+                    if (length > 15 * 60) continue;
                     var artist = Str(f, "creator");
                     list.Add(new Result
                     {
@@ -60,7 +63,7 @@ namespace VeriPlayer.Services
                         Title = title,
                         Artist = artist.Length > 0 ? artist : creator,
                         Album = album,
-                        Duration = ParseLength(Str(f, "length")),
+                        Duration = length,
                         StreamUrl = "https://archive.org/download/" + Uri.EscapeDataString(id) + "/" + EscapePath(name),
                         CoverUrl = "https://archive.org/services/img/" + Uri.EscapeDataString(id),
                         Source = "Internet Archive",
@@ -80,7 +83,7 @@ namespace VeriPlayer.Services
             string.Join("/", path.Split('/').Select(Uri.EscapeDataString));
 
         /// <summary>«214.5» или «3:34» / «1:02:10» → секунды.</summary>
-        internal static double ParseLength(string value)
+        public static double ParseLength(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return 0;
             if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var s)) return s;
@@ -94,7 +97,7 @@ namespace VeriPlayer.Services
         }
 
         /// <summary>Ссылка лицензии → короткое имя: «CC BY-NC-SA 4.0», «CC0», «Public Domain».</summary>
-        internal static string LicenseName(string url)
+        public static string LicenseName(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return "";
             var u = url.ToLowerInvariant();

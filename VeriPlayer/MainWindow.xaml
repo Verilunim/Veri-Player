@@ -347,6 +347,8 @@
                         </StackPanel>
                     </Grid>
 
+                    <!-- уходящая вкладка плавно гаснет под новой -->
+                    <ContentControl x:Name="OutgoingHost" Grid.Row="1" IsHitTestVisible="False" />
                     <ContentControl x:Name="ContentHost" Grid.Row="1" />
                 </Grid>
             </Grid>

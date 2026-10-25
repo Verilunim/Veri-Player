@@ -76,7 +76,7 @@ namespace VeriPlayer.Services
             if (!LicenseFormat.TryVerify(key, Verifier, out var payload))
                 return (false, "Ключ недействителен. Проверьте, что он скопирован целиком.");
             if (!string.Equals(payload.n.Trim(), user.Nick.Trim(), StringComparison.OrdinalIgnoreCase))
-                return (false, "Этот ключ выпущен для другого аккаунта («" + payload.n + "»).");
+                return (false, "Этот ключ уже не активен."); // чей это ключ — не раскрываем
             if (payload.ExpiresUtc is DateTime end && DateTime.UtcNow >= end)
                 return (false, "Срок действия этого ключа уже закончился.");
 

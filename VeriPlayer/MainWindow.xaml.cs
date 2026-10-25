@@ -109,7 +109,7 @@ namespace VeriPlayer
 
             _view = "library";
             _currentPlaylist = null;
-            ContentHost.Content = _player;
+            SetContent(_player);
             NavList.SelectedIndex = 0;
             PageTitle.Text = "Библиотека";
 
@@ -366,7 +366,7 @@ namespace VeriPlayer
                 _addLink.CloseRequested += (s, e) => SelectView("library");
             }
 
-            ContentHost.Content = _addLink;
+            SetContent(_addLink);
             PageTitle.Text = "Добавить по ссылке";
             RefreshCounts();
             AnimateView(_addLink);
@@ -386,7 +386,7 @@ namespace VeriPlayer
         private void ShowPlayer()
         {
             if (_player != null && !ReferenceEquals(ContentHost.Content, _player))
-                ContentHost.Content = _player;
+                SetContent(_player);
         }
 
         private void BtnNewPlaylist_Click(object sender, RoutedEventArgs e)
@@ -861,13 +861,66 @@ namespace VeriPlayer
         private void AnimateView(FrameworkElement view)
         {
             if (view == null) return;
+            view.BeginAnimation(OpacityProperty, null);
             if (PerformanceService.ReduceMotion) { view.Opacity = 1; return; }
 
+            // проявление с лёгким подъёмом снизу — мягко, без рывка
+            var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
             view.Opacity = 0;
-            view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260))
+            view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420))
             {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
             });
+
+            if (view.RenderTransform is not TranslateTransform shift)
+            {
+                if (view.RenderTransform != null && view.RenderTransform != Transform.Identity) return;
+                view.RenderTransform = shift = new TranslateTransform();
+            }
+            shift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(520))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
+            });
+        }
+
+        /// <summary>
+        /// Меняет содержимое правой части: прежняя вкладка не пропадает мгновенно, а плавно гаснет,
+        /// пока новая проявляется (см. AnimateView).
+        /// </summary>
+        private void SetContent(object view)
+        {
+            var old = ContentHost.Content as FrameworkElement;
+            if (ReferenceEquals(old, view)) return;
+
+            // вкладка могла ещё догорать снизу — забираем её обратно
+            if (view != null && ReferenceEquals(OutgoingHost.Content, view)) ClearOutgoing();
+            ContentHost.Content = null;
+
+            if (old != null && view != null && IsLoaded && !PerformanceService.ReduceMotion)
+            {
+                ClearOutgoing();
+                OutgoingHost.Content = old;
+                var fade = new DoubleAnimation(old.Opacity, 0, TimeSpan.FromMilliseconds(220))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                };
+                fade.Completed += (s, e) => { if (ReferenceEquals(OutgoingHost.Content, old)) ClearOutgoing(); };
+                old.BeginAnimation(OpacityProperty, fade);
+            }
+
+            ContentHost.Content = view;
+        }
+
+        private void ClearOutgoing()
+        {
+            if (OutgoingHost.Content is FrameworkElement leaving)
+            {
+                leaving.BeginAnimation(OpacityProperty, null);
+                leaving.Opacity = 1;
+            }
+            OutgoingHost.Content = null;
         }
 
         private void OverlayDim_MouseDown(object sender, MouseButtonEventArgs e) => CloseModal();
@@ -1355,14 +1408,14 @@ namespace VeriPlayer
 
             if (_adminOpen)
             {
-                ContentHost.Content = _player;
+                SetContent(_player);
                 RefreshLibrary();
                 AnimateView(_player);
             }
             else
             {
                 _admin.Refresh();
-                ContentHost.Content = _admin;
+                SetContent(_admin);
                 PageTitle.Text = "Панель владельца";
                 NavList.SelectedItem = null;
                 PlaylistList.SelectedItem = null;
@@ -1393,7 +1446,7 @@ namespace VeriPlayer
             _admin = null;
             _view = "library";
             _currentPlaylist = null;
-            ContentHost.Content = null;
+            SetContent(null);
             PlaylistList.ItemsSource = null;
             SearchInput.Clear();
 

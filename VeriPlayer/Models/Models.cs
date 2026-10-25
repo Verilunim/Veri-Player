@@ -109,6 +109,8 @@ namespace VeriPlayer.Models
         public string WebUrl { get; set; } = "";
         /// <summary>Адрес обложки в сервисе; локальная копия появляется в CoverPath.</summary>
         public string ArtworkUrl { get; set; } = "";
+        /// <summary>Автор, лицензия и источник для музыки из поиска (указание авторства по CC).</summary>
+        public string License { get; set; } = "";
 
         [JsonIgnore]
         public bool IsRemote => !string.IsNullOrEmpty(Source);

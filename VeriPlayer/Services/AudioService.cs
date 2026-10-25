@@ -279,6 +279,10 @@ namespace VeriPlayer.Services
 
         private static WaveStream CreateReader(Track track)
         {
+            // трек из поиска до скачивания: играем прямо по ссылке
+            if (track.Source == MusicSearchService.StreamSource)
+                return new MediaFoundationReader(track.FilePath);
+
             var path = track.FilePath;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 throw new FileNotFoundException("Файл не найден", path);

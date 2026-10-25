@@ -335,6 +335,7 @@ namespace VeriPlayer
             _nav.Add(new NavItem { Tag = "library", Title = "Библиотека", Icon = (Geometry)FindResource("IconNote") });
             _nav.Add(new NavItem { Tag = "favorites", Title = "Избранное", Icon = (Geometry)FindResource("IconHeart") });
             _nav.Add(new NavItem { Tag = "recent", Title = "Недавние", Icon = (Geometry)FindResource("IconClock") });
+            _nav.Add(new NavItem { Tag = "search", Title = "Поиск музыки", Icon = (Geometry)FindResource("IconSearch") });
             _nav.Add(new NavItem { Tag = "addlink", Title = "Добавить по ссылке", Icon = (Geometry)FindResource("IconLink") });
             NavList.ItemsSource = _nav;
         }
@@ -353,9 +354,26 @@ namespace VeriPlayer
                 return;
             }
 
+            if (item.Tag == "search")
+            {
+                ShowSearch();
+                return;
+            }
+
             ShowPlayer();
             RefreshLibrary();
             AnimateView(_player);
+        }
+
+        private SearchPanel _search;
+
+        private void ShowSearch()
+        {
+            _search ??= new SearchPanel();
+            SetContent(_search);
+            PageTitle.Text = "Поиск музыки";
+            RefreshCounts();
+            AnimateView(_search);
         }
 
         private void ShowAddLink()
@@ -501,7 +519,7 @@ namespace VeriPlayer
         public void RefreshLibrary()
         {
             if (_player == null) return;
-            if (_view == "addlink") return;
+            if (_view == "addlink" || _view == "search") return;
 
             var search = SearchInput.Text;
             var data = UserDataService.Current;

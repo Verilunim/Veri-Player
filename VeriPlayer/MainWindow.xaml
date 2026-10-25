@@ -279,7 +279,7 @@
                                 <TextBox x:Name="SearchInput" Grid.Column="0" Style="{StaticResource BareTextBox}"
                                          Padding="18,0,6,0" VerticalAlignment="Center"
                                          TextChanged="SearchInput_TextChanged" />
-                                <TextBlock x:Name="SearchPlaceholder" Text="Поиск музыки"
+                                <TextBlock x:Name="SearchPlaceholder" Text="Поиск в библиотеке"
                                            Foreground="{DynamicResource TextFaintBrush}" FontSize="12.5"
                                            VerticalAlignment="Center" Margin="20,0,6,0" IsHitTestVisible="False"
                                            Panel.ZIndex="2" />

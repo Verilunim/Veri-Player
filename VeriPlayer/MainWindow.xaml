@@ -320,10 +320,6 @@
                                     <ContentControl x:Name="LockBackground" Style="{StaticResource ProLockBadge}" />
                                 </Grid>
                             </Button>
-                            <Button Style="{StaticResource BtnIcon}" ToolTip="Spotify и другие сервисы" Click="BtnServices_Click">
-                                <Path Data="{StaticResource IconSpotify}" Style="{StaticResource IconBase}" Width="21" Height="21"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                            </Button>
                             <Button x:Name="BtnAdmin" Style="{StaticResource BtnIcon}" ToolTip="Панель владельца" Visibility="Collapsed"
                                     Click="BtnAdmin_Click">
                                 <Path Data="{StaticResource IconShield}" Style="{StaticResource IconBase}" Width="21" Height="21"

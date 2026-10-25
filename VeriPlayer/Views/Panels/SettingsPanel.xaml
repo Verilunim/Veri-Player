@@ -62,8 +62,6 @@
             <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
                 <StackPanel>
                     <TextBlock x:Name="AboutText" Style="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                    <TextBlock Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="0,10,0,0"
-                               Text="Spotify подключается по вашему Client ID (в разделе «Сервисы»). Воспроизведение музыки сторонних сервисов возможно только в самих этих сервисах — Veri Player играет ваши файлы." />
                 </StackPanel>
             </Border>
 

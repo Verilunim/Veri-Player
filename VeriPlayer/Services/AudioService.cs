@@ -279,10 +279,6 @@ namespace VeriPlayer.Services
 
         private static WaveStream CreateReader(Track track)
         {
-            // поток SoundCloud: ссылка живёт недолго, поэтому берём свежую перед каждым запуском
-            if (track.Source == SoundCloudService.SourceKey)
-                return new MediaFoundationReader(SoundCloudService.ResolveStream(track));
-
             var path = track.FilePath;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 throw new FileNotFoundException("Файл не найден", path);

@@ -85,10 +85,10 @@
                                            Margin="12,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconSpotify}" Width="20" Height="20" Stretch="None"
+                                <Path Data="{StaticResource IconFilm}" Width="20" Height="20" Stretch="Uniform"
                                       Stroke="#FFFFFF" StrokeThickness="1.7" StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round" StrokeLineJoin="Round" VerticalAlignment="Center" />
-                                <TextBlock Text="Подключение Spotify-аккаунта" Foreground="#F2F2FA" FontSize="13"
+                                <TextBlock Text="Обложки и клипы для каждой песни" Foreground="#F2F2FA" FontSize="13"
                                            Margin="12,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
                         </StackPanel>

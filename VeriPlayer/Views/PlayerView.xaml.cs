@@ -113,8 +113,7 @@ namespace VeriPlayer.Views
             if (track == null) return;
 
             bool current = AudioService.Current != null && AudioService.Current.Id == track.Id;
-            HeroLabel.Text = (current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА") +
-                             (track.Source == SoundCloudService.SourceKey ? "  ·  SOUNDCLOUD" : "");
+            HeroLabel.Text = (current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА");
             HeroTitle.Text = track.DisplayTitle;
             HeroMeta.Text = track.DisplayArtist +
                             (string.IsNullOrWhiteSpace(track.Album) ? "" : " · " + track.Album) +

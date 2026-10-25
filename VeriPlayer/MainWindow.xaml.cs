@@ -31,7 +31,6 @@ namespace VeriPlayer
         private PlayerView _player;
         private AdminView _admin;
         private AddByLinkPanel _addLink;
-        private GenerateMusicPanel _generateMusic;
         private string _view = "library";
         private Playlist _currentPlaylist;
         private Border _dropHint;
@@ -319,7 +318,6 @@ namespace VeriPlayer
             LockEffects.Visibility = lockVisibility;
             LockTheme.Visibility = lockVisibility;
             LockBackground.Visibility = lockVisibility;
-            foreach (var item in _nav) item.Locked = !pro && item.Tag == "generate";
             UserProMark.Visibility = pro ? Visibility.Visible : Visibility.Collapsed;
 
             ApplyAppearance();
@@ -337,27 +335,13 @@ namespace VeriPlayer
             _nav.Add(new NavItem { Tag = "library", Title = "Библиотека", Icon = (Geometry)FindResource("IconNote") });
             _nav.Add(new NavItem { Tag = "favorites", Title = "Избранное", Icon = (Geometry)FindResource("IconHeart") });
             _nav.Add(new NavItem { Tag = "recent", Title = "Недавние", Icon = (Geometry)FindResource("IconClock") });
-            _nav.Add(new NavItem { Tag = "generate", Title = "Создать песню", Icon = (Geometry)FindResource("IconWand") });
             _nav.Add(new NavItem { Tag = "addlink", Title = "Добавить по ссылке", Icon = (Geometry)FindResource("IconLink") });
-            _nav.Add(new NavItem { Tag = "soundcloud", Title = "SoundCloud", Icon = (Geometry)FindResource("IconCloud") });
-            _nav.Add(new NavItem { Tag = "ytmusic", Title = "YouTube Music", Icon = (Geometry)FindResource("IconYouTube") });
             NavList.ItemsSource = _nav;
         }
 
-        private bool _navGuard;
-
         private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_navGuard || NavList.SelectedItem is not NavItem item) return;
-
-            if (item.Tag == "generate" && !RequirePro("Создание музыки с AI"))
-            {
-                // остаёмся там, где были
-                _navGuard = true;
-                NavList.SelectedItem = _nav.FirstOrDefault(n => n.Tag == _view);
-                _navGuard = false;
-                return;
-            }
+            if (NavList.SelectedItem is not NavItem item) return;
 
             _view = item.Tag;
             _currentPlaylist = null;
@@ -366,18 +350,6 @@ namespace VeriPlayer
             if (item.Tag == "addlink")
             {
                 ShowAddLink();
-                return;
-            }
-
-            if (item.Tag == "generate")
-            {
-                ShowGenerate();
-                return;
-            }
-
-            if (item.Tag == "soundcloud" || item.Tag == "ytmusic")
-            {
-                ShowStreaming(item.Tag == "soundcloud" ? StreamingPanel.Kind.SoundCloud : StreamingPanel.Kind.YouTubeMusic, item.Title);
                 return;
             }
 
@@ -398,30 +370,6 @@ namespace VeriPlayer
             PageTitle.Text = "Добавить по ссылке";
             RefreshCounts();
             AnimateView(_addLink);
-        }
-
-        private readonly Dictionary<StreamingPanel.Kind, StreamingPanel> _streaming = new Dictionary<StreamingPanel.Kind, StreamingPanel>();
-
-        private void ShowStreaming(StreamingPanel.Kind kind, string title)
-        {
-            if (!_streaming.TryGetValue(kind, out var panel))
-                _streaming[kind] = panel = new StreamingPanel(kind);
-
-            ContentHost.Content = panel;
-            PageTitle.Text = title;
-            RefreshCounts();
-            AnimateView(panel);
-        }
-
-        private void ShowGenerate()
-        {
-            if (_generateMusic == null)
-                _generateMusic = new GenerateMusicPanel();
-
-            ContentHost.Content = _generateMusic;
-            PageTitle.Text = "Создать песню с AI";
-            RefreshCounts();
-            AnimateView(_generateMusic);
         }
 
         private void PlaylistList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -553,7 +501,7 @@ namespace VeriPlayer
         public void RefreshLibrary()
         {
             if (_player == null) return;
-            if (_view == "addlink" || _view == "generate" || _view == "soundcloud" || _view == "ytmusic") return;
+            if (_view == "addlink") return;
 
             var search = SearchInput.Text;
             var data = UserDataService.Current;
@@ -1382,7 +1330,6 @@ namespace VeriPlayer
         {
             if (RequirePro("Свой фон")) ShowPanel(new BackgroundPanel());
         }
-        private void BtnServices_Click(object sender, RoutedEventArgs e) => ShowPanel(new SpotifyPanel());
         private void BtnSettings_Click(object sender, RoutedEventArgs e) => ShowPanel(new SettingsPanel());
         private void UserCard_Click(object sender, MouseButtonEventArgs e) => ShowPanel(new ProfilePanel());
 

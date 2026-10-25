@@ -38,12 +38,6 @@
                     <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0" TextWrapping="Wrap" MaxWidth="370"
                                Text="Оформление: RGB-цвета интерфейса, эффекты фона, свои фоновые картинки" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Path Data="{StaticResource IconWand}" Style="{StaticResource IconBase}" Width="17" Height="17"
-                          Stroke="{DynamicResource AccentTextBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
-                    <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0" TextWrapping="Wrap" MaxWidth="370"
-                               Text="Создание музыки с AI" />
-                </StackPanel>
             </StackPanel>
         </Border>
 

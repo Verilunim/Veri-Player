@@ -28,6 +28,10 @@ namespace VeriPlayer.Services
             public string License = "";
             public string LicenseUrl = "";
             public string PageUrl = "";
+            /// <summary>Только на сайте: слушать и скачивать там (Bandcamp), в плеер не встраивается.</summary>
+            public bool OnSiteOnly;
+            /// <summary>«Альбом», «Трек», «Исполнитель» — для результатов Bandcamp.</summary>
+            public string Kind = "";
 
             public string DurationText => Duration <= 0 ? "" : TimeSpan.FromSeconds(Duration).ToString(Duration >= 3600 ? @"h\:mm\:ss" : @"m\:ss");
             /// <summary>Строка для указания авторства — условие лицензий Creative Commons.</summary>
@@ -53,17 +57,21 @@ namespace VeriPlayer.Services
 
             var openverse = Guard("Openverse", () => OpenverseAsync(query, ct), failed);
             var archive = Guard("Internet Archive", () => ArchiveAsync(query, ct), failed);
-            await Task.WhenAll(openverse, archive).ConfigureAwait(false);
+            var bandcamp = Guard("Bandcamp", () => BandcampAsync(query, ct), failed);
+            await Task.WhenAll(openverse, archive, bandcamp).ConfigureAwait(false);
 
             // чередуем источники, чтобы наверху были результаты из обоих; одинаковые треки убираем
-            var a = openverse.Result;
-            var b = archive.Result;
+            var sources = new[] { openverse.Result, archive.Result, bandcamp.Result };
             var merged = new List<Result>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < Math.Max(a.Count, b.Count); i++)
+            for (int i = 0; i < sources.Max(x => x.Count); i++)
             {
-                foreach (var r in new[] { i < a.Count ? a[i] : null, i < b.Count ? b[i] : null })
-                    if (r != null && r.StreamUrl.Length > 0 && seen.Add(r.Artist + "|" + r.Title)) merged.Add(r);
+                foreach (var list in sources)
+                {
+                    var r = i < list.Count ? list[i] : null;
+                    if (r == null || (r.StreamUrl.Length == 0 && !r.OnSiteOnly)) continue;
+                    if (seen.Add(r.Source + "|" + r.Kind + "|" + r.Artist + "|" + r.Title)) merged.Add(r);
+                }
             }
             return (merged, failed);
         }

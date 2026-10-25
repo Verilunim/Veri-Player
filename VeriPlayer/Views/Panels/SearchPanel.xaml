@@ -97,6 +97,7 @@
                             </Grid.ColumnDefinitions>
 
                             <Button Width="36" Height="36" Cursor="Hand" Click="Play_Click" Tag="{Binding}"
+                                    Visibility="{Binding CanPlay, Converter={StaticResource BoolToVis}}"
                                     ToolTip="Слушать сразу, без скачивания" VerticalAlignment="Center">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
@@ -135,7 +136,7 @@
 
                             <Button Grid.Column="4" Content="{Binding ActionText}" Style="{StaticResource BtnGhost}"
                                     Width="128" Height="34" Padding="0" Click="Download_Click" Tag="{Binding}"
-                                    ToolTip="Скачать в библиотеку и включить" VerticalAlignment="Center" />
+                                    ToolTip="Скачать в библиотеку и включить (Bandcamp — открыть на сайте)" VerticalAlignment="Center" />
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -147,6 +148,6 @@
         </Grid>
 
         <TextBlock x:Name="Attribution" Grid.Row="3" Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="2,12,0,0"
-                   Text="Музыка распространяется по лицензиям Creative Commons и в общественном достоянии. При скачивании автор, лицензия и источник сохраняются у трека. Лицензии с пометкой NC запрещают коммерческое использование." />
+                   Text="Jamendo и Internet Archive — музыка по лицензиям Creative Commons и в общественном достоянии: автор, лицензия и источник сохраняются у трека (NC — без коммерческого использования). Bandcamp открывается на сайте: купите релиз или заберите бесплатный — скачанный файл из «Загрузок» сам появится в библиотеке." />
     </Grid>
 </UserControl>

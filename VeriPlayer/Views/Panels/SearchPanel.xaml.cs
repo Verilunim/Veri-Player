@@ -140,7 +140,8 @@ namespace VeriPlayer.Views.Panels
 
             // уже скачанное играем из библиотеки, остальное — прямо по ссылке
             var downloaded = MusicSearchService.FindDownloaded(row.Result);
-            var rows = (Results.ItemsSource as IEnumerable<SearchRow>)?.ToList() ?? new List<SearchRow> { row };
+            // в очередь — только то, что играет в плеере (Bandcamp слушают на сайте)
+            var rows = (Results.ItemsSource as IEnumerable<SearchRow>)?.Where(r => r.CanPlay).ToList() ?? new List<SearchRow> { row };
             var queue = rows.Select(r => MusicSearchService.FindDownloaded(r.Result) ?? MusicSearchService.ToStreamTrack(r.Result)).ToList();
             var track = downloaded ?? queue[rows.IndexOf(row)];
             AudioService.PlayTrack(track, queue, "Поиск: " + QueryBox.Text.Trim());
@@ -150,6 +151,16 @@ namespace VeriPlayer.Views.Panels
         private async void Download_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as FrameworkElement)?.Tag is not SearchRow row || row.Downloading) return;
+
+            if (row.Result.OnSiteOnly)
+            {
+                // скачивание — на самом Bandcamp; файл из «Загрузок» подхватит DownloadsWatcher
+                DownloadsWatcher.Start();
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(row.Result.PageUrl) { UseShellExecute = true }); }
+                catch (Exception ex) { MainWindow.Instance?.ShowToast("Не удалось открыть браузер: " + ex.Message, "error"); return; }
+                MainWindow.Instance?.ShowToast("Купите или скачайте бесплатно на Bandcamp — файл из «Загрузок» сам появится в библиотеке", "info");
+                return;
+            }
 
             if (row.Downloaded)
             {

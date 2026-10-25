@@ -158,6 +158,13 @@ namespace VeriPlayer
                 DiscordService.UpdatePresence(AudioService.Current, playing);
                 TrayService.UpdateTooltip(AudioService.Current, playing, AudioService.Position, AudioService.Duration);
             };
+            DownloadsWatcher.Imported += (count, first) =>
+            {
+                if (count <= 0) return;
+                RefreshAll();
+                if (first != null) AudioService.PlayTrack(first, LibraryService.Tracks, "Библиотека");
+                ShowToast("Из «Загрузок» добавлено треков: " + count + (first != null ? " — уже играет" : ""), "ok");
+            };
             AudioService.Failed += message => Dispatcher.BeginInvoke(new Action(() =>
             {
                 StopVideo();
@@ -204,6 +211,7 @@ namespace VeriPlayer
                 App.SaveSettings();
                 AudioService.Shutdown();
                 LibraryService.Flush();
+                DownloadsWatcher.Stop();
                 DiscordService.Shutdown();
                 TrayService.Shutdown();
             }

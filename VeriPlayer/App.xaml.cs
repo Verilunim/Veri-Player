@@ -105,6 +105,7 @@ namespace VeriPlayer
             {
                 AudioService.Shutdown();
                 LibraryService.Flush();
+                DownloadsWatcher.Stop();
                 SaveSettings();
             }
             catch { }

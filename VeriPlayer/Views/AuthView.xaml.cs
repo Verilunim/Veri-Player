@@ -38,20 +38,25 @@ namespace VeriPlayer.Views
 
         // ------------------------------------------------------------------ видео на фоне
 
-        private const string VideoFileName = "auth-background.mp4";
+        private const string VideoResource = "VeriPlayer.auth-background.mp4";
 
-        /// <summary>Видео рядом с exe (кладёт сборка), иначе — исходник в библиотеке Movavi.</summary>
+        /// <summary>
+        /// Видео зашито в exe. MediaElement играет только файлы, поэтому при первом показе
+        /// (или если файл повреждён/устарел) оно распаковывается в папку данных программы.
+        /// </summary>
         private static string FindVideo()
         {
-            var candidates = new[]
-            {
-                System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", VideoFileName),
-                System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "OneDrive", "Videos", "Movavi Library", "BACKGROUND.mp4"),
-                System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
-                    "Movavi Library", "BACKGROUND.mp4")
-            };
-            return candidates.FirstOrDefault(System.IO.File.Exists);
+            using var stream = typeof(AuthView).Assembly.GetManifestResourceStream(VideoResource);
+            if (stream == null) return null;
+
+            var path = System.IO.Path.Combine(Storage.Dir("cache"), "auth-background.mp4");
+            var file = new System.IO.FileInfo(path);
+            if (file.Exists && file.Length == stream.Length) return path;
+
+            var temp = path + ".tmp";
+            using (var output = System.IO.File.Create(temp)) stream.CopyTo(output);
+            System.IO.File.Move(temp, path, true);
+            return path;
         }
 
         private void StartVideo()

@@ -40,14 +40,9 @@
     <Resource Include="Assets\logo.png" />
   </ItemGroup>
 
-  <!-- фон экрана входа: видео ~200 МБ в репозиторий не кладём, берём с диска и кладём рядом с exe -->
-  <PropertyGroup>
-    <AuthVideoSource>$(USERPROFILE)\OneDrive\Videos\Movavi Library\BACKGROUND.mp4</AuthVideoSource>
-  </PropertyGroup>
-  <ItemGroup Condition="Exists('$(AuthVideoSource)')">
-    <None Include="$(AuthVideoSource)" Link="Assets\auth-background.mp4"
-          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
-          ExcludeFromSingleFile="true" />
+  <!-- фон экрана входа (720p, без звука) зашит в exe; при первом показе распаковывается в папку данных -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\auth-background.mp4" LogicalName="VeriPlayer.auth-background.mp4" />
   </ItemGroup>
 
 </Project>

@@ -416,6 +416,7 @@ namespace VeriPlayer.Services
                 case "album": q = q.OrderBy(t => t.Album, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.DisplayTitle, StringComparer.CurrentCultureIgnoreCase); break;
                 case "duration": q = q.OrderByDescending(t => t.Duration); break;
                 case "plays": q = q.OrderByDescending(t => t.Plays); break;
+                case "foryou": q = TasteService.Rank(q, UserDataService.Current); break;
                 default: q = q.OrderByDescending(t => t.AddedAt); break;
             }
 

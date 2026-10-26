@@ -179,6 +179,13 @@ namespace VeriPlayer.Models
         public List<string> Favorites { get; set; } = new List<string>();
         public List<string> Recent { get; set; } = new List<string>();
         public List<Playlist> Playlists { get; set; } = new List<Playlist>();
+
+        /// <summary>Сколько всего секунд музыки прослушано. Копится между входами и не сбрасывается.</summary>
+        public double ListenedSeconds { get; set; }
+        /// <summary>Секунды прослушивания по каждому треку — по ним строится подборка «Для вас».</summary>
+        public Dictionary<string, double> TrackSeconds { get; set; } = new Dictionary<string, double>();
+        /// <summary>Сколько раз трек переключили в первые секунды — такие опускаются в подборке.</summary>
+        public Dictionary<string, int> Skips { get; set; } = new Dictionary<string, int>();
     }
 
     public class BackgroundImage
@@ -224,17 +231,15 @@ namespace VeriPlayer.Models
 
         // ---- behaviour ----
         public bool CopyFilesIntoLibrary { get; set; }
-        public string SortMode { get; set; } = "added";
+        public string SortMode { get; set; } = "foryou";
+        /// <summary>Версия подборки: при появлении «Для вас» сортировка один раз переключается на неё.</summary>
+        public int TasteVersion { get; set; }
         public double Volume { get; set; } = 0.8;
         public bool Muted { get; set; }
         public bool Shuffle { get; set; }
         public string Repeat { get; set; } = "off";
         public string LastTrackId { get; set; } = "";
 
-
-        // ---- Pro+ (только для команды) ----
-        /// <summary>Путь к закрытому ключу подписи, если он лежит не на месте по умолчанию.</summary>
-        public string LicensePrivateKeyPath { get; set; } = "";
     }
 
 }

@@ -56,6 +56,14 @@ namespace VeriPlayer
                 SaveSettings();
             }
 
+            // подборка «Для вас»: один раз делаем её сортировкой по умолчанию
+            if (Settings.TasteVersion < 1)
+            {
+                Settings.SortMode = "foryou";
+                Settings.TasteVersion = 1;
+                SaveSettings();
+            }
+
             PerformanceService.Detect();
             ThemeService.Apply(Settings);
 
@@ -63,6 +71,7 @@ namespace VeriPlayer
             LibraryService.Init();
             BackgroundService.Init();
             AudioService.Init();
+            ListeningService.Init();
             AudioService.Volume = Settings.Muted ? 0 : Settings.Volume;
             AudioService.Shuffle = Settings.Shuffle;
             AudioService.Repeat = Settings.Repeat;

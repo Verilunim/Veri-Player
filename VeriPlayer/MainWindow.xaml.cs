@@ -114,7 +114,7 @@ namespace VeriPlayer
             PageTitle.Text = "Библиотека";
 
             UserName.Text = AuthService.Current.Nick;
-            UserRole.Text = AuthService.Current.RoleLabel;
+            UpdateUserStats();
             UserAvatar.Source = AuthService.Current.AvatarPath;
             UserAvatar.Initial = AuthService.Current.Initial;
             BtnAdmin.Visibility = AuthService.Current.IsStaff ? Visibility.Visible : Visibility.Collapsed;
@@ -128,8 +128,18 @@ namespace VeriPlayer
             ShowToast("Добро пожаловать, " + AuthService.Current.Nick + "!", "ok");
         }
 
+        /// <summary>Под ником: роль и сколько всего минут музыки прослушано.</summary>
+        private void UpdateUserStats()
+        {
+            var user = AuthService.Current;
+            if (user == null) return;
+            UserRole.Text = user.RoleLabel + "  ·  " + ListeningService.FormatMinutes(ListeningService.TotalMinutes());
+            UserRole.ToolTip = "Всего прослушано: " + ListeningService.FormatMinutes(ListeningService.TotalMinutes(), true);
+        }
+
         private void WireServices()
         {
+            ListeningService.MinutesChanged += UpdateUserStats;
             AuthService.UsersChanged += () => { if (_admin != null) _admin.Refresh(); };
             LibraryService.Changed += RefreshAll;
             UserDataService.Changed += () =>
@@ -209,6 +219,7 @@ namespace VeriPlayer
                 App.Settings.Shuffle = AudioService.Shuffle;
                 App.Settings.Repeat = AudioService.Repeat;
                 App.SaveSettings();
+                ListeningService.EndUser();
                 AudioService.Shutdown();
                 LibraryService.Flush();
                 DownloadsWatcher.Stop();
@@ -572,7 +583,8 @@ namespace VeriPlayer
                     title = "Библиотека";
                     subtitle = LibraryService.Tracks.Count == 0
                         ? "пока пусто"
-                        : tracks.Count + " из " + LibraryService.Tracks.Count + " · " + Storage.Human(LibraryService.TotalSize());
+                        : tracks.Count + " из " + LibraryService.Tracks.Count + " · " + Storage.Human(LibraryService.TotalSize()) +
+                          (sort == "foryou" ? " · подобрано по вашему вкусу" : "");
                     break;
             }
 
@@ -1494,11 +1506,12 @@ namespace VeriPlayer
             UserAvatar.Source = AuthService.Current.AvatarPath;
             UserAvatar.Initial = AuthService.Current.Initial;
             UserName.Text = AuthService.Current.Nick;
-            UserRole.Text = AuthService.Current.RoleLabel;
+            UpdateUserStats();
         }
 
         public void Logout()
         {
+            ListeningService.EndUser();
             AudioService.Stop();
             AuthService.Logout();
             CloseModal();

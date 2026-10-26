@@ -1,6 +1,7 @@
 <UserControl x:Class="VeriPlayer.Views.Panels.SearchPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:VeriPlayer.Controls">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <Style x:Key="ResultItem" TargetType="ListBoxItem">
@@ -84,7 +85,8 @@
 
             <ListBox x:Name="Results" Grid.Row="1" Margin="0,12,0,0" ItemContainerStyle="{StaticResource ResultItem}"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Pixel" controls:SmoothScroll.IsEnabled="True">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid>

@@ -202,7 +202,8 @@
                                     <Path Data="{StaticResource IconPlus}" Style="{StaticResource IconBase}" Width="16" Height="16" />
                                 </Button>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                          controls:SmoothScroll.IsEnabled="True">
                                 <ListBox x:Name="PlaylistList" ItemTemplate="{StaticResource PlaylistItemTemplate}"
                                          ItemContainerStyle="{StaticResource SideListBoxItem}"
                                          SelectionChanged="PlaylistList_SelectionChanged" />
@@ -361,7 +362,10 @@
                     HorizontalAlignment="Center" VerticalAlignment="Center" MaxHeight="820"
                     Opacity="0" RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
-                    <ScaleTransform x:Name="OverlayScale" ScaleX="0.96" ScaleY="0.96" />
+                    <TransformGroup>
+                        <ScaleTransform x:Name="OverlayScale" ScaleX="0.96" ScaleY="0.96" />
+                        <TranslateTransform x:Name="OverlayShift" />
+                    </TransformGroup>
                 </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="60" ShadowDepth="10" Opacity="0.7" Color="Black" />

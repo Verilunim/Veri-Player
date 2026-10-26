@@ -848,6 +848,10 @@ namespace VeriPlayer
             };
             OverlayScale.BeginAnimation(ScaleTransform.ScaleXProperty, scale);
             OverlayScale.BeginAnimation(ScaleTransform.ScaleYProperty, scale);
+            OverlayShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(28, 0, TimeSpan.FromSeconds(0.34))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            });
         }
 
         public void ShowPanel(IModalPanel panel)
@@ -872,8 +876,13 @@ namespace VeriPlayer
                 OverlayCard.Opacity = 1;
                 OverlayScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
                 OverlayScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                OverlayShift.BeginAnimation(TranslateTransform.YProperty, null);
             };
             OverlayCard.BeginAnimation(OpacityProperty, fade);
+            OverlayShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, 14, TimeSpan.FromSeconds(0.16))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            });
 
             var shrink = new DoubleAnimation(1, 0.965, TimeSpan.FromSeconds(0.16))
             {
@@ -890,7 +899,7 @@ namespace VeriPlayer
             view.BeginAnimation(OpacityProperty, null);
             if (PerformanceService.ReduceMotion) { view.Opacity = 1; return; }
 
-            // проявление с лёгким подъёмом снизу — мягко, без рывка
+            // вкладка «перелетает» справа с лёгким подъёмом снизу — мягко, без рывка
             var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
             view.Opacity = 0;
             view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420))
@@ -907,6 +916,19 @@ namespace VeriPlayer
             shift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(520))
             {
                 BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
+            });
+            // экран входа и оболочка целиком (с видео на фоне) только поднимаются — вбок летают вкладки
+            if (ReferenceEquals(view, Shell) || ReferenceEquals(view, Auth)) return;
+            shift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(42, 0, TimeSpan.FromMilliseconds(560))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
+            });
+
+            // заголовок раздела догоняет содержимое
+            PageTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(360))
+            {
                 EasingFunction = ease
             });
         }
@@ -934,6 +956,18 @@ namespace VeriPlayer
                 };
                 fade.Completed += (s, e) => { if (ReferenceEquals(OutgoingHost.Content, old)) ClearOutgoing(); };
                 old.BeginAnimation(OpacityProperty, fade);
+
+                // уходящая вкладка улетает влево, освобождая место новой
+                if (old.RenderTransform is not TranslateTransform away)
+                {
+                    away = old.RenderTransform == null || old.RenderTransform == Transform.Identity
+                        ? new TranslateTransform() : null;
+                    if (away != null) old.RenderTransform = away;
+                }
+                away?.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, -36, TimeSpan.FromMilliseconds(240))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                });
             }
 
             ContentHost.Content = view;
@@ -945,6 +979,11 @@ namespace VeriPlayer
             {
                 leaving.BeginAnimation(OpacityProperty, null);
                 leaving.Opacity = 1;
+                if (leaving.RenderTransform is TranslateTransform shift)
+                {
+                    shift.BeginAnimation(TranslateTransform.XProperty, null);
+                    shift.X = 0;
+                }
             }
             OutgoingHost.Content = null;
         }

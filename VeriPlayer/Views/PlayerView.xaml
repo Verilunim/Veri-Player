@@ -193,7 +193,7 @@
             </Grid>
 
             <!-- текст слева -->
-            <StackPanel Grid.Column="0" Margin="40,22,24,0" VerticalAlignment="Top">
+            <StackPanel x:Name="HeroText" Grid.Column="0" Margin="40,22,24,0" VerticalAlignment="Top">
                 <TextBlock x:Name="HeroLabel" Text="СЕЙЧАС ИГРАЕТ" FontSize="11.5" FontWeight="Bold"
                            Foreground="{DynamicResource TextFaintBrush}" />
                 <TextBlock x:Name="HeroTitle" FontSize="44" FontWeight="Bold" LineHeight="50"
@@ -319,6 +319,8 @@
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      VirtualizingPanel.IsVirtualizing="True"
                      VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Pixel"
+                     controls:SmoothScroll.IsEnabled="True"
                      Background="Transparent" BorderThickness="0" />
 
             <!-- пустое состояние -->

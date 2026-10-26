@@ -28,6 +28,89 @@ namespace VeriPlayer.Views
                 Dispatcher.BeginInvoke(new Action(() => UpdateUnderline(false)),
                     System.Windows.Threading.DispatcherPriority.Loaded);
             };
+            // видео идёт только пока экран входа на виду — после входа файл отпускаем
+            IsVisibleChanged += (s, e) =>
+            {
+                if (IsVisible) StartVideo();
+                else StopVideo();
+            };
+        }
+
+        // ------------------------------------------------------------------ видео на фоне
+
+        private const string VideoFileName = "auth-background.mp4";
+
+        /// <summary>Видео рядом с exe (кладёт сборка), иначе — исходник в библиотеке Movavi.</summary>
+        private static string FindVideo()
+        {
+            var candidates = new[]
+            {
+                System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", VideoFileName),
+                System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "OneDrive", "Videos", "Movavi Library", "BACKGROUND.mp4"),
+                System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+                    "Movavi Library", "BACKGROUND.mp4")
+            };
+            return candidates.FirstOrDefault(System.IO.File.Exists);
+        }
+
+        private void StartVideo()
+        {
+            try
+            {
+                var path = FindVideo();
+                if (path == null) return;
+                if (AuthVideo.Source == null)
+                    AuthVideo.Source = new Uri(path, UriKind.Absolute);
+                AuthVideo.Play();
+            }
+            catch { StopVideo(); }
+        }
+
+        private void StopVideo()
+        {
+            try
+            {
+                VideoLayer.BeginAnimation(OpacityProperty, null);
+                VideoLayer.Opacity = 0;
+                AuthVideo.Stop();
+                AuthVideo.Close();
+                AuthVideo.Source = null;
+            }
+            catch { }
+        }
+
+        private void AuthVideo_MediaOpened(object sender, RoutedEventArgs e)
+        {
+            if (PerformanceService.ReduceMotion) { VideoLayer.Opacity = 1; return; }
+            VideoLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(1.2))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            });
+        }
+
+        /// <summary>Закончилось — сразу по новой, и так до входа в аккаунт.</summary>
+        private void AuthVideo_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            AuthVideo.Position = TimeSpan.Zero;
+            AuthVideo.Play();
+        }
+
+        private void AuthVideo_MediaFailed(object sender, ExceptionRoutedEventArgs e) => StopVideo();
+
+        /// <summary>Карточка входа выплывает чуть увеличиваясь — в такт общему проявлению экрана.</summary>
+        private void AnimateCard()
+        {
+            AuthCardScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, null);
+            AuthCardScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, null);
+            if (PerformanceService.ReduceMotion) return;
+            var grow = new DoubleAnimation(0.94, 1, TimeSpan.FromMilliseconds(620))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.25 }
+            };
+            AuthCardScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, grow);
+            AuthCardScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, grow);
         }
 
         public void Prepare()
@@ -40,6 +123,7 @@ namespace VeriPlayer.Views
             ChangePanel.Visibility = Visibility.Collapsed;
             if (_setupOnly) ShowLogin(false, false);
             else ShowLogin(true, false);
+            AnimateCard();
         }
 
         // ------------------------------------------------------------------ первый запуск
@@ -78,11 +162,14 @@ namespace VeriPlayer.Views
         private void ShowLogin(bool login, bool animate = true)
         {
             if (_setupOnly) login = false;
+            bool changed = _loginMode != login;
             _loginMode = login;
             LoginPanel.Visibility = login ? Visibility.Visible : Visibility.Collapsed;
             RegisterPanel.Visibility = login ? Visibility.Collapsed : Visibility.Visible;
 
             UpdateUnderline(animate);
+            // «Вход» прилетает слева, «Регистрация» — справа, вслед за подчёркиванием
+            if (animate && changed) FlyIn(login ? LoginPanel : RegisterPanel, login ? -36 : 36);
 
             if (login)
             {
@@ -114,6 +201,21 @@ namespace VeriPlayer.Views
                 Animate(TabUnderlineShift, System.Windows.Media.TranslateTransform.XProperty, x, 0.28);
             else
                 TabUnderlineShift.X = x;
+        }
+
+        /// <summary>Панель влетает сбоку и проявляется.</summary>
+        private static void FlyIn(FrameworkElement panel, double fromX)
+        {
+            panel.BeginAnimation(OpacityProperty, null);
+            if (PerformanceService.ReduceMotion) { panel.Opacity = 1; return; }
+
+            if (panel.RenderTransform is not System.Windows.Media.TranslateTransform shift)
+                panel.RenderTransform = shift = new System.Windows.Media.TranslateTransform();
+
+            var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
+            panel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = ease });
+            shift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,
+                new DoubleAnimation(fromX, 0, TimeSpan.FromMilliseconds(420)) { EasingFunction = ease });
         }
 
         private static void Animate(System.Windows.Media.TranslateTransform target,
@@ -178,6 +280,7 @@ namespace VeriPlayer.Views
             RegisterPanel.Visibility = Visibility.Collapsed;
             TabHost.Visibility = Visibility.Collapsed;
             ChangePanel.Visibility = Visibility.Visible;
+            FlyIn(ChangePanel, 36);
             ChangeError.Visibility = Visibility.Collapsed;
             ChangePassword1.Clear();
             ChangePassword2.Clear();

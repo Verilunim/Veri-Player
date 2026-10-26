@@ -40,4 +40,14 @@
     <Resource Include="Assets\logo.png" />
   </ItemGroup>
 
+  <!-- фон экрана входа: видео ~200 МБ в репозиторий не кладём, берём с диска и кладём рядом с exe -->
+  <PropertyGroup>
+    <AuthVideoSource>$(USERPROFILE)\OneDrive\Videos\Movavi Library\BACKGROUND.mp4</AuthVideoSource>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(AuthVideoSource)')">
+    <None Include="$(AuthVideoSource)" Link="Assets\auth-background.mp4"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
 </Project>

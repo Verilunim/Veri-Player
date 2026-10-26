@@ -6,8 +6,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d">
     <Grid>
-        <Border Style="{StaticResource GlassPanel}" Width="980" MaxHeight="660" Margin="40"
-                HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
+        <!-- живой фон за формой: крутится по кругу, пока пользователь не войдёт -->
+        <Grid x:Name="VideoLayer" IsHitTestVisible="False" ClipToBounds="True" Opacity="0">
+            <MediaElement x:Name="AuthVideo" Stretch="UniformToFill" IsMuted="True"
+                          LoadedBehavior="Manual" UnloadedBehavior="Manual"
+                          MediaOpened="AuthVideo_MediaOpened" MediaEnded="AuthVideo_MediaEnded"
+                          MediaFailed="AuthVideo_MediaFailed" />
+            <Rectangle Fill="#000000" Opacity="0.28" />
+        </Grid>
+
+        <Border x:Name="AuthCard" Style="{StaticResource GlassPanel}" Width="980" MaxHeight="660" Margin="40"
+                HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <ScaleTransform x:Name="AuthCardScale" />
+            </Border.RenderTransform>
             <Border.Effect>
                 <DropShadowEffect BlurRadius="70" ShadowDepth="12" Opacity="0.65" Color="Black" />
             </Border.Effect>

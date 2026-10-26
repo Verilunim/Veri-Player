@@ -570,7 +570,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Grid>
+                    <Grid Width="26" Height="26">
                         <Ellipse x:Name="Halo" Width="26" Height="26" Fill="{DynamicResource AccentGlowBrush}" Opacity="0" />
                         <Ellipse Width="15" Height="15" Fill="White" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" />
                         <Ellipse Width="15" Height="15" Fill="{DynamicResource AccentBrush}" Opacity="0.22" />
@@ -596,14 +596,17 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
                     <Grid Background="Transparent" VerticalAlignment="Center">
-                        <Border Height="6" CornerRadius="3" Background="{DynamicResource HairlineBrush}" VerticalAlignment="Center" />
+                        <!-- бегунок шириной 26 ходит центром от 13 до (ширина − 13): полоса и заливка
+                             сдвинуты на полбегунка, чтобы кружок стоял ровно на конце линии -->
+                        <Border Height="6" CornerRadius="3" Background="{DynamicResource HairlineBrush}"
+                                VerticalAlignment="Center" Margin="13,0" />
                         <Track x:Name="PART_Track" VerticalAlignment="Center">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton Command="{x:Static Slider.DecreaseLarge}" Style="{StaticResource PlainRepeat}">
                                     <RepeatButton.Template>
                                         <ControlTemplate TargetType="RepeatButton">
                                             <Border Height="6" CornerRadius="3" Background="{DynamicResource AccentBrush}"
-                                                    VerticalAlignment="Center" />
+                                                    VerticalAlignment="Center" Margin="13,0,-13,0" />
                                         </ControlTemplate>
                                     </RepeatButton.Template>
                                 </RepeatButton>

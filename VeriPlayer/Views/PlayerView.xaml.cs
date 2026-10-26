@@ -106,6 +106,71 @@ namespace VeriPlayer.Views
 
             UpdateEmptyState(context);
             UpdateHero();
+            AnimateRowsIn();
+        }
+
+        // ================================================================== анимации появления
+
+        private static readonly IEasingFunction EaseOut = new QuarticEase { EasingMode = EasingMode.EaseOut };
+
+        /// <summary>Строки списка по очереди всплывают снизу — «лесенкой», а не все разом.</summary>
+        private void AnimateRowsIn()
+        {
+            if (PerformanceService.ReduceMotion || _rows.Count == 0) return;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                // видимых строк немного — дальше генератор ещё не создал контейнеры
+                for (int i = 0; i < Math.Min(_rows.Count, 24); i++)
+                {
+                    if (TrackList.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement item) break;
+                    Rise(item, TimeSpan.FromMilliseconds(28 * i), 0, 18);
+                }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        /// <summary>Проявляет элемент со сдвигом (dx, dy) → 0 через <paramref name="delay"/>.</summary>
+        private static void Rise(FrameworkElement element, TimeSpan delay, double dx, double dy, int ms = 460)
+        {
+            if (element.RenderTransform is not TranslateTransform shift)
+                element.RenderTransform = shift = new TranslateTransform();
+
+            var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(ms * 0.8))
+            {
+                BeginTime = delay,
+                EasingFunction = EaseOut
+            };
+            // по окончании возвращаем обычные значения, чтобы снятая анимация не оставила элемент невидимым
+            fade.Completed += (s, e) => { element.Opacity = 1; shift.X = 0; shift.Y = 0; };
+            element.Opacity = 0;
+            element.BeginAnimation(OpacityProperty, fade);
+            shift.BeginAnimation(TranslateTransform.XProperty, dx == 0 ? null
+                : new DoubleAnimation(dx, 0, TimeSpan.FromMilliseconds(ms)) { BeginTime = delay, EasingFunction = EaseOut });
+            shift.BeginAnimation(TranslateTransform.YProperty, dy == 0 ? null
+                : new DoubleAnimation(dy, 0, TimeSpan.FromMilliseconds(ms)) { BeginTime = delay, EasingFunction = EaseOut });
+            // до старта задержки держим элемент невидимым и на исходной точке
+            if (dx != 0) shift.X = dx;
+            if (dy != 0) shift.Y = dy;
+        }
+
+        /// <summary>Карточки «далее» выезжают справа одна за другой.</summary>
+        private void AnimateUpNext()
+        {
+            if (PerformanceService.ReduceMotion) return;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                for (int i = 0; i < UpNext.Items.Count; i++)
+                    if (UpNext.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement card)
+                        Rise(card, TimeSpan.FromMilliseconds(70 * i), 60, 0, 520);
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        /// <summary>Новый трек в главном блоке: обложка проявляется, текст и номер въезжают.</summary>
+        private void AnimateHeroChange()
+        {
+            if (PerformanceService.ReduceMotion) return;
+            HeroCover.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(520)) { EasingFunction = EaseOut });
+            Rise(HeroText, TimeSpan.Zero, -28, 0, 520);
+            Rise(HeroIndex, TimeSpan.FromMilliseconds(60), 0, 22, 520);
         }
 
         // ================================================================== главный блок
@@ -117,7 +182,10 @@ namespace VeriPlayer.Views
         {
             var track = HeroTrack;
             Hero.Visibility = track == null ? Visibility.Collapsed : Visibility.Visible;
-            if (track == null) return;
+            if (track == null) { _heroId = null; _upNextKey = null; return; }
+
+            if (_heroId != null && _heroId != track.Id) AnimateHeroChange();
+            _heroId = track.Id;
 
             bool current = AudioService.Current != null && AudioService.Current.Id == track.Id;
             HeroLabel.Text = (current ? (AudioService.IsPlaying ? "СЕЙЧАС ИГРАЕТ" : "НА ПАУЗЕ") : "НАЧНИТЕ С ЭТОГО ТРЕКА");
@@ -144,8 +212,17 @@ namespace VeriPlayer.Views
             // следующие три трека после героя
             var source = current && AudioService.Queue.Count > 0 ? AudioService.Queue : _rows.Select(r => r.Track).ToList();
             int start = Math.Max(0, current ? AudioService.Index : source.IndexOf(track));
-            UpNext.ItemsSource = source.Skip(start + 1).Concat(source.Take(start)).Where(t => t.Id != track.Id).Take(3).ToList();
+            var next = source.Skip(start + 1).Concat(source.Take(start)).Where(t => t.Id != track.Id).Take(3).ToList();
+            // перерисовываем и анимируем, только если очередь правда сменилась (а не пауза/обновление)
+            var key = string.Join("|", next.Select(t => t.Id));
+            UpNext.ItemsSource = next;
+            if (key == _upNextKey) return;
+            _upNextKey = key;
+            AnimateUpNext();
         }
+
+        private string _heroId;
+        private string _upNextKey;
 
         private void HeroPlay_Click(object sender, RoutedEventArgs e)
         {

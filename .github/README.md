@@ -1,13 +1,12 @@
 # Veri Player
 
-Эстетичный музыкальный плеер для Windows с AI-генерацией треков, анимированными фонами и облачными интеграциями.
+Эстетичный музыкальный плеер для Windows с подборкой по вашему вкусу, анимированными фонами и поиском открытой музыки.
 
 ## Фичи
 - 🎨 8 анимированных фонов (снег, дождь, листья, звёзды...)
-- 🤖 AI-генерация музыки через Suno API
+- 🎯 Подборка «Для вас» и статистика прослушанных минут
+- 🔍 Поиск открытой музыки: Openverse, Internet Archive, Bandcamp
 - 🔗 Шеринг треков через QR-коды и ссылки
-- ☁️ SoundCloud и ▶️ YouTube Music: ваша музыка из аккаунта
-- 🎵 Импорт из Spotify и Yandex Music
 - ⭐ Подписка Pro+ по ключу активации с цифровой подписью
 - 👥 Локальная система аккаунтов с ролями и защищёнными паролями
 - 🎮 Полный набор горячих клавиш
@@ -17,13 +16,12 @@
 - .NET 8.0 Runtime (включён)
 
 ## Скачать
-Версия 1.4.0.0: [Releases → VeriPlayer.exe (64 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
+Версия 1.5.0.0: [Releases → VeriPlayer.exe (82 MB)](https://github.com/Verilunim/Veri-Player/releases/latest)
 
 ## Документация
 - [README.md](README.md) — полная документация
 - [GITHUB_DEPLOY.md](GITHUB_DEPLOY.md) — инструкции по загрузке на GitHub
 - [DISCORD_SETUP.md](DISCORD_SETUP.md) — настройка Discord Rich Presence
-- [README_SUNO.md](README_SUNO.md) — настройка Suno AI
 
 ## Лицензия
 MIT

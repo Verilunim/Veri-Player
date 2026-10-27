@@ -1265,6 +1265,17 @@ namespace VeriPlayer
         private string _videoBadPath;
         private DispatcherTimer _videoLoopTimer;
 
+        /// <summary>Непрозрачность клипа поверх фона.</summary>
+        private const double ClipOpacity = 0.92;
+        /// <summary>Длительность перехода с конца клипа на его начало.</summary>
+        private const double ClipFadeSeconds = 0.6;
+
+        /// <summary>Проигрыватель, который сейчас виден и играет.</summary>
+        private MediaElement _clipFront;
+        /// <summary>Второй проигрыватель: ждёт на первом кадре, чтобы подхватить петлю.</summary>
+        private MediaElement _clipBack;
+        private bool _clipFading;
+
         /// <summary>Синхронизирует фоновый клип с текущим треком и состоянием плеера.</summary>
         public void UpdateBackgroundVideo()
         {
@@ -1284,56 +1295,121 @@ namespace VeriPlayer
                 }
 
                 if (!string.Equals(_videoPath, path, StringComparison.OrdinalIgnoreCase))
-                {
-                    _videoPath = path;
-                    VideoBackground.Stop();
-                    VideoBackground.Source = new Uri(path, UriKind.Absolute);
-                    VideoBackground.Position = TimeSpan.Zero;
-                }
+                    LoadClip(path);
 
-                VideoBackground.Visibility = Visibility.Visible;
                 if (AudioService.IsPlaying)
                 {
-                    VideoBackground.Play();
+                    _clipFront.Play();
+                    if (_clipFading) _clipBack.Play();
                     StartVideoLoopGuard();
                 }
                 else
                 {
-                    VideoBackground.Pause();
+                    _clipFront.Pause();
+                    if (_clipFading) _clipBack.Pause();
                     _videoLoopTimer?.Stop();
                 }
             }
             catch { StopVideo(); }
         }
 
+        /// <summary>Открывает клип в обоих проигрывателях: первый показывает его, второй ждёт на первом кадре.</summary>
+        private void LoadClip(string path)
+        {
+            _videoPath = path;
+            _clipFading = false;
+            _clipFront = VideoBackground;
+            _clipBack = VideoBackground2;
+
+            var uri = new Uri(path, UriKind.Absolute);
+            foreach (var clip in new[] { _clipFront, _clipBack })
+            {
+                clip.BeginAnimation(OpacityProperty, null);
+                clip.Stop();
+                clip.Source = uri;
+                clip.Position = TimeSpan.Zero;
+                clip.Visibility = Visibility.Visible;
+            }
+
+            _clipFront.Opacity = ClipOpacity;
+            Panel.SetZIndex(_clipFront, 1);
+            // Pause открывает файл и (при ScrubbingEnabled) выводит первый кадр — к стыку он уже готов
+            _clipBack.Opacity = 0;
+            Panel.SetZIndex(_clipBack, 0);
+            _clipBack.Pause();
+        }
+
         private void StartVideoLoopGuard()
         {
             if (_videoLoopTimer == null)
             {
-                _videoLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+                _videoLoopTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(30) };
                 _videoLoopTimer.Tick += (s, e) => GuardVideoLoop();
             }
             _videoLoopTimer.Start();
         }
 
-        /// <summary>Перематывает клип в начало чуть раньше конца — так петля идёт без обрыва и чёрного кадра.</summary>
+        /// <summary>Незадолго до конца клипа запускает переход на его начало.</summary>
         private void GuardVideoLoop()
         {
             try
             {
-                if (VideoBackground.Visibility != Visibility.Visible) return;
-                if (!AudioService.IsPlaying) return;
+                if (_clipFront == null || _clipFading || !AudioService.IsPlaying) return;
+                if (_clipFront.Visibility != Visibility.Visible) return;
 
-                var dur = VideoBackground.NaturalDuration;
+                var dur = _clipFront.NaturalDuration;
                 if (!dur.HasTimeSpan) return;
 
                 var total = dur.TimeSpan.TotalSeconds;
-                if (total <= 0.5) return;
+                if (total <= 0.3) return;
 
-                if (VideoBackground.Position.TotalSeconds >= Math.Max(0.1, total - 0.2))
-                    VideoBackground.Position = TimeSpan.Zero;
+                // переход должен закончиться раньше, чем клип дойдёт до конца, — с запасом на неточную позицию
+                double fade = Math.Min(ClipFadeSeconds, total * 0.3);
+                if (_clipFront.Position.TotalSeconds >= total - fade - 0.15)
+                    CrossfadeClip(fade);
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Второй проигрыватель стартует с начала и плавно проявляется поверх первого, который ещё
+        /// доигрывает последние кадры. Перемотка идёт уже у невидимого — чёрного кадра не видно.
+        /// </summary>
+        private void CrossfadeClip(double seconds)
+        {
+            var prev = _clipFront;
+            var next = _clipBack;
+            if (prev == null || next == null) return;
+            _clipFading = true;
+
+            // второй уже стоит на первом кадре (его перемотали, пока он был невидим) — только запускаем
+            Panel.SetZIndex(next, 2);
+            Panel.SetZIndex(prev, 1);
+            next.Play();
+
+            var fade = new DoubleAnimation(0, ClipOpacity, TimeSpan.FromSeconds(seconds))
+            {
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            fade.Completed += (s, e) => FinishCrossfade(prev, next);
+            next.BeginAnimation(OpacityProperty, fade);
+        }
+
+        /// <summary>Новый круг полностью виден: прежний проигрыватель уходит вниз и ждёт на первом кадре.</summary>
+        private void FinishCrossfade(MediaElement prev, MediaElement next)
+        {
+            if (!_clipFading || !ReferenceEquals(_clipBack, next)) return; // уже завершён или клип сменился
+            next.BeginAnimation(OpacityProperty, null);
+            next.Opacity = ClipOpacity;
+
+            prev.Pause();
+            prev.Opacity = 0;
+            prev.Position = TimeSpan.Zero;
+            Panel.SetZIndex(prev, 0);
+
+            _clipFront = next;
+            _clipBack = prev;
+            _clipFading = false;
         }
 
         private void StopVideo()
@@ -1341,35 +1417,32 @@ namespace VeriPlayer
             try
             {
                 _videoLoopTimer?.Stop();
-                if (VideoBackground != null)
+                foreach (var clip in new[] { VideoBackground, VideoBackground2 })
                 {
-                    VideoBackground.Stop();
-                    VideoBackground.Visibility = Visibility.Collapsed;
+                    if (clip == null) continue;
+                    clip.BeginAnimation(OpacityProperty, null);
+                    clip.Opacity = 0;
+                    clip.Stop();
+                    clip.Visibility = Visibility.Collapsed;
                 }
             }
             catch { }
             _videoPath = null;
+            _clipFading = false;
         }
 
+        /// <summary>
+        /// Запасной путь: видимый клип всё же дошёл до конца раньше перехода. В конце MediaElement
+        /// на мгновение гаснет в чёрный, поэтому второй (уже стоящий на первом кадре) показываем сразу.
+        /// </summary>
         private void VideoBackground_MediaEnded(object sender, RoutedEventArgs e)
         {
-            // Крутим клип по кругу. НЕ вызываем Stop() — он очищает кадр и даёт чёрную вспышку.
-            // Просто возвращаем позицию в начало и продолжаем; стык маскируем лёгким проявлением.
             try
             {
-                VideoBackground.Position = TimeSpan.Zero;
-                VideoBackground.Play();
-
-                var fade = new System.Windows.Media.Animation.DoubleAnimation(0.55, 0.92, TimeSpan.FromMilliseconds(150))
-                {
-                    EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                fade.Completed += (s2, e2) =>
-                {
-                    try { VideoBackground.BeginAnimation(OpacityProperty, null); }
-                    catch { }
-                };
-                VideoBackground.BeginAnimation(OpacityProperty, fade);
+                if (!ReferenceEquals(sender, _clipFront) || !AudioService.IsPlaying) return;
+                // переход уже идёт — доводим его мгновенно, иначе начинаем почти без растворения
+                if (_clipFading) FinishCrossfade(_clipFront, _clipBack);
+                else CrossfadeClip(0.05);
             }
             catch { }
         }

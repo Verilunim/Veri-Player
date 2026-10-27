@@ -140,9 +140,16 @@
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- клип на фоне песни (MP4, до 5 секунд) -->
+            <!-- клип на фоне песни (MP4, до 5 секунд): два проигрывателя по очереди — пока один доигрывает,
+                 второй с первого кадра плавно проявляется поверх, поэтому петля идёт без чёрного кадра -->
             <MediaElement x:Name="VideoBackground" Visibility="Collapsed" Stretch="UniformToFill"
-                          IsMuted="True" LoadedBehavior="Manual" UnloadedBehavior="Manual" Opacity="0.92"
+                          IsMuted="True" LoadedBehavior="Manual" UnloadedBehavior="Manual" Opacity="0"
+                          ScrubbingEnabled="True"
+                          MediaEnded="VideoBackground_MediaEnded"
+                          MediaFailed="VideoBackground_MediaFailed" />
+            <MediaElement x:Name="VideoBackground2" Visibility="Collapsed" Stretch="UniformToFill"
+                          IsMuted="True" LoadedBehavior="Manual" UnloadedBehavior="Manual" Opacity="0"
+                          ScrubbingEnabled="True"
                           MediaEnded="VideoBackground_MediaEnded"
                           MediaFailed="VideoBackground_MediaFailed" />
         </Grid>

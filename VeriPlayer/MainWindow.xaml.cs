@@ -31,7 +31,6 @@ namespace VeriPlayer
         private PlayerView _player;
         private AdminView _admin;
         private AddByLinkPanel _addLink;
-        private GenerateMusicPanel _generateMusic;
         private string _view = "library";
         private Playlist _currentPlaylist;
         private Border _dropHint;
@@ -79,7 +78,7 @@ namespace VeriPlayer
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            AnimateBlobs();
+            // фоновые «пятна» скрыты в новом дизайне — их бесконечные анимации грузили процессор впустую
             BuildDropHint();
             ApplyAppearance();
 
@@ -110,12 +109,12 @@ namespace VeriPlayer
 
             _view = "library";
             _currentPlaylist = null;
-            ContentHost.Content = _player;
+            SetContent(_player);
             NavList.SelectedIndex = 0;
             PageTitle.Text = "Библиотека";
 
             UserName.Text = AuthService.Current.Nick;
-            UserRole.Text = AuthService.Current.RoleLabel;
+            UpdateUserStats();
             UserAvatar.Source = AuthService.Current.AvatarPath;
             UserAvatar.Initial = AuthService.Current.Initial;
             BtnAdmin.Visibility = AuthService.Current.IsStaff ? Visibility.Visible : Visibility.Collapsed;
@@ -129,8 +128,18 @@ namespace VeriPlayer
             ShowToast("Добро пожаловать, " + AuthService.Current.Nick + "!", "ok");
         }
 
+        /// <summary>Под ником: роль и сколько всего минут музыки прослушано.</summary>
+        private void UpdateUserStats()
+        {
+            var user = AuthService.Current;
+            if (user == null) return;
+            UserRole.Text = user.RoleLabel + "  ·  " + ListeningService.FormatMinutes(ListeningService.TotalMinutes());
+            UserRole.ToolTip = "Всего прослушано: " + ListeningService.FormatMinutes(ListeningService.TotalMinutes(), true);
+        }
+
         private void WireServices()
         {
+            ListeningService.MinutesChanged += UpdateUserStats;
             AuthService.UsersChanged += () => { if (_admin != null) _admin.Refresh(); };
             LibraryService.Changed += RefreshAll;
             UserDataService.Changed += () =>
@@ -158,6 +167,13 @@ namespace VeriPlayer
                 // Discord Rich Presence
                 DiscordService.UpdatePresence(AudioService.Current, playing);
                 TrayService.UpdateTooltip(AudioService.Current, playing, AudioService.Position, AudioService.Duration);
+            };
+            DownloadsWatcher.Imported += (count, first) =>
+            {
+                if (count <= 0) return;
+                RefreshAll();
+                if (first != null) AudioService.PlayTrack(first, LibraryService.Tracks, "Библиотека");
+                ShowToast("Из «Загрузок» добавлено треков: " + count + (first != null ? " — уже играет" : ""), "ok");
             };
             AudioService.Failed += message => Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -203,7 +219,10 @@ namespace VeriPlayer
                 App.Settings.Shuffle = AudioService.Shuffle;
                 App.Settings.Repeat = AudioService.Repeat;
                 App.SaveSettings();
+                ListeningService.EndUser();
                 AudioService.Shutdown();
+                LibraryService.Flush();
+                DownloadsWatcher.Stop();
                 DiscordService.Shutdown();
                 TrayService.Shutdown();
             }
@@ -263,9 +282,13 @@ namespace VeriPlayer
         {
             var look = Look;
             ThemeService.Apply(look);
-            Particles.Kind = Effects.Parse(look.Effect);
+            // облегчённый режим: без частиц и спектра (они рисуются каждый кадр)
+            Particles.Kind = PerformanceService.Particles ? Effects.Parse(look.Effect) : EffectKind.None;
             Particles.Intensity = look.EffectIntensity;
+            SpectrumVisualizer.Enabled = PerformanceService.Visualizer;
+            _player?.ApplyPerformance();
             ApplyBackground();
+            UpdateBackgroundVideo();
             AuroraLayer.Opacity = App.Settings.ReduceMotion ? 0.32 : 0.5;
         }
 
@@ -287,7 +310,7 @@ namespace VeriPlayer
                 var image = Storage.LoadImage(background.FilePath, decode);
                 BackgroundImage.Source = image;
                 BackgroundImage.Visibility = image == null ? Visibility.Collapsed : Visibility.Visible;
-                BackgroundImage.Effect = blur > 1
+                BackgroundImage.Effect = blur > 1 && PerformanceService.BlurBackground
                     ? new BlurEffect { Radius = Math.Min(16, blur * 0.28), KernelType = KernelType.Gaussian }
                     : null;
             }
@@ -314,7 +337,6 @@ namespace VeriPlayer
             LockEffects.Visibility = lockVisibility;
             LockTheme.Visibility = lockVisibility;
             LockBackground.Visibility = lockVisibility;
-            foreach (var item in _nav) item.Locked = !pro && item.Tag == "generate";
             UserProMark.Visibility = pro ? Visibility.Visible : Visibility.Collapsed;
 
             ApplyAppearance();
@@ -332,27 +354,14 @@ namespace VeriPlayer
             _nav.Add(new NavItem { Tag = "library", Title = "Библиотека", Icon = (Geometry)FindResource("IconNote") });
             _nav.Add(new NavItem { Tag = "favorites", Title = "Избранное", Icon = (Geometry)FindResource("IconHeart") });
             _nav.Add(new NavItem { Tag = "recent", Title = "Недавние", Icon = (Geometry)FindResource("IconClock") });
-            _nav.Add(new NavItem { Tag = "generate", Title = "Создать песню", Icon = (Geometry)FindResource("IconWand") });
+            _nav.Add(new NavItem { Tag = "search", Title = "Поиск музыки", Icon = (Geometry)FindResource("IconSearch") });
             _nav.Add(new NavItem { Tag = "addlink", Title = "Добавить по ссылке", Icon = (Geometry)FindResource("IconLink") });
-            _nav.Add(new NavItem { Tag = "soundcloud", Title = "SoundCloud", Icon = (Geometry)FindResource("IconCloud") });
-            _nav.Add(new NavItem { Tag = "ytmusic", Title = "YouTube Music", Icon = (Geometry)FindResource("IconYouTube") });
             NavList.ItemsSource = _nav;
         }
 
-        private bool _navGuard;
-
         private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_navGuard || NavList.SelectedItem is not NavItem item) return;
-
-            if (item.Tag == "generate" && !RequirePro("Создание музыки с AI"))
-            {
-                // остаёмся там, где были
-                _navGuard = true;
-                NavList.SelectedItem = _nav.FirstOrDefault(n => n.Tag == _view);
-                _navGuard = false;
-                return;
-            }
+            if (NavList.SelectedItem is not NavItem item) return;
 
             _view = item.Tag;
             _currentPlaylist = null;
@@ -364,21 +373,26 @@ namespace VeriPlayer
                 return;
             }
 
-            if (item.Tag == "generate")
+            if (item.Tag == "search")
             {
-                ShowGenerate();
-                return;
-            }
-
-            if (item.Tag == "soundcloud" || item.Tag == "ytmusic")
-            {
-                ShowStreaming(item.Tag == "soundcloud" ? StreamingPanel.Kind.SoundCloud : StreamingPanel.Kind.YouTubeMusic, item.Title);
+                ShowSearch();
                 return;
             }
 
             ShowPlayer();
             RefreshLibrary();
             AnimateView(_player);
+        }
+
+        private SearchPanel _search;
+
+        private void ShowSearch()
+        {
+            _search ??= new SearchPanel();
+            SetContent(_search);
+            PageTitle.Text = "Поиск музыки";
+            RefreshCounts();
+            AnimateView(_search);
         }
 
         private void ShowAddLink()
@@ -389,34 +403,10 @@ namespace VeriPlayer
                 _addLink.CloseRequested += (s, e) => SelectView("library");
             }
 
-            ContentHost.Content = _addLink;
+            SetContent(_addLink);
             PageTitle.Text = "Добавить по ссылке";
             RefreshCounts();
             AnimateView(_addLink);
-        }
-
-        private readonly Dictionary<StreamingPanel.Kind, StreamingPanel> _streaming = new Dictionary<StreamingPanel.Kind, StreamingPanel>();
-
-        private void ShowStreaming(StreamingPanel.Kind kind, string title)
-        {
-            if (!_streaming.TryGetValue(kind, out var panel))
-                _streaming[kind] = panel = new StreamingPanel(kind);
-
-            ContentHost.Content = panel;
-            PageTitle.Text = title;
-            RefreshCounts();
-            AnimateView(panel);
-        }
-
-        private void ShowGenerate()
-        {
-            if (_generateMusic == null)
-                _generateMusic = new GenerateMusicPanel();
-
-            ContentHost.Content = _generateMusic;
-            PageTitle.Text = "Создать песню с AI";
-            RefreshCounts();
-            AnimateView(_generateMusic);
         }
 
         private void PlaylistList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -433,7 +423,7 @@ namespace VeriPlayer
         private void ShowPlayer()
         {
             if (_player != null && !ReferenceEquals(ContentHost.Content, _player))
-                ContentHost.Content = _player;
+                SetContent(_player);
         }
 
         private void BtnNewPlaylist_Click(object sender, RoutedEventArgs e)
@@ -548,7 +538,7 @@ namespace VeriPlayer
         public void RefreshLibrary()
         {
             if (_player == null) return;
-            if (_view == "addlink" || _view == "generate" || _view == "soundcloud" || _view == "ytmusic") return;
+            if (_view == "addlink" || _view == "search") return;
 
             var search = SearchInput.Text;
             var data = UserDataService.Current;
@@ -593,7 +583,8 @@ namespace VeriPlayer
                     title = "Библиотека";
                     subtitle = LibraryService.Tracks.Count == 0
                         ? "пока пусто"
-                        : tracks.Count + " из " + LibraryService.Tracks.Count + " · " + Storage.Human(LibraryService.TotalSize());
+                        : tracks.Count + " из " + LibraryService.Tracks.Count + " · " + Storage.Human(LibraryService.TotalSize()) +
+                          (sort == "foryou" ? " · подобрано по вашему вкусу" : "");
                     break;
             }
 
@@ -869,6 +860,10 @@ namespace VeriPlayer
             };
             OverlayScale.BeginAnimation(ScaleTransform.ScaleXProperty, scale);
             OverlayScale.BeginAnimation(ScaleTransform.ScaleYProperty, scale);
+            OverlayShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(28, 0, TimeSpan.FromSeconds(0.34))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            });
         }
 
         public void ShowPanel(IModalPanel panel)
@@ -893,8 +888,13 @@ namespace VeriPlayer
                 OverlayCard.Opacity = 1;
                 OverlayScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
                 OverlayScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                OverlayShift.BeginAnimation(TranslateTransform.YProperty, null);
             };
             OverlayCard.BeginAnimation(OpacityProperty, fade);
+            OverlayShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, 14, TimeSpan.FromSeconds(0.16))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            });
 
             var shrink = new DoubleAnimation(1, 0.965, TimeSpan.FromSeconds(0.16))
             {
@@ -908,13 +908,96 @@ namespace VeriPlayer
         private void AnimateView(FrameworkElement view)
         {
             if (view == null) return;
-            if (App.Settings.ReduceMotion) { view.Opacity = 1; return; }
+            view.BeginAnimation(OpacityProperty, null);
+            if (PerformanceService.ReduceMotion) { view.Opacity = 1; return; }
 
+            // вкладка «перелетает» справа с лёгким подъёмом снизу — мягко, без рывка
+            var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
             view.Opacity = 0;
-            view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260))
+            view.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420))
             {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
             });
+
+            if (view.RenderTransform is not TranslateTransform shift)
+            {
+                if (view.RenderTransform != null && view.RenderTransform != Transform.Identity) return;
+                view.RenderTransform = shift = new TranslateTransform();
+            }
+            shift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(520))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
+            });
+            // экран входа и оболочка целиком (с видео на фоне) только поднимаются — вбок летают вкладки
+            if (ReferenceEquals(view, Shell) || ReferenceEquals(view, Auth)) return;
+            shift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(42, 0, TimeSpan.FromMilliseconds(560))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(60),
+                EasingFunction = ease
+            });
+
+            // заголовок раздела догоняет содержимое
+            PageTitle.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(360))
+            {
+                EasingFunction = ease
+            });
+        }
+
+        /// <summary>
+        /// Меняет содержимое правой части: прежняя вкладка не пропадает мгновенно, а плавно гаснет,
+        /// пока новая проявляется (см. AnimateView).
+        /// </summary>
+        private void SetContent(object view)
+        {
+            var old = ContentHost.Content as FrameworkElement;
+            if (ReferenceEquals(old, view)) return;
+
+            // вкладка могла ещё догорать снизу — забираем её обратно
+            if (view != null && ReferenceEquals(OutgoingHost.Content, view)) ClearOutgoing();
+            ContentHost.Content = null;
+
+            if (old != null && view != null && IsLoaded && !PerformanceService.ReduceMotion)
+            {
+                ClearOutgoing();
+                OutgoingHost.Content = old;
+                var fade = new DoubleAnimation(old.Opacity, 0, TimeSpan.FromMilliseconds(220))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                };
+                fade.Completed += (s, e) => { if (ReferenceEquals(OutgoingHost.Content, old)) ClearOutgoing(); };
+                old.BeginAnimation(OpacityProperty, fade);
+
+                // уходящая вкладка улетает влево, освобождая место новой
+                if (old.RenderTransform is not TranslateTransform away)
+                {
+                    away = old.RenderTransform == null || old.RenderTransform == Transform.Identity
+                        ? new TranslateTransform() : null;
+                    if (away != null) old.RenderTransform = away;
+                }
+                away?.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, -36, TimeSpan.FromMilliseconds(240))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+                });
+            }
+
+            ContentHost.Content = view;
+        }
+
+        private void ClearOutgoing()
+        {
+            if (OutgoingHost.Content is FrameworkElement leaving)
+            {
+                leaving.BeginAnimation(OpacityProperty, null);
+                leaving.Opacity = 1;
+                if (leaving.RenderTransform is TranslateTransform shift)
+                {
+                    shift.BeginAnimation(TranslateTransform.XProperty, null);
+                    shift.X = 0;
+                }
+            }
+            OutgoingHost.Content = null;
         }
 
         private void OverlayDim_MouseDown(object sender, MouseButtonEventArgs e) => CloseModal();
@@ -1182,11 +1265,22 @@ namespace VeriPlayer
         private string _videoBadPath;
         private DispatcherTimer _videoLoopTimer;
 
+        /// <summary>Непрозрачность клипа поверх фона.</summary>
+        private const double ClipOpacity = 0.92;
+        /// <summary>Длительность перехода с конца клипа на его начало.</summary>
+        private const double ClipFadeSeconds = 0.6;
+
+        /// <summary>Проигрыватель, который сейчас виден и играет.</summary>
+        private MediaElement _clipFront;
+        /// <summary>Второй проигрыватель: ждёт на первом кадре, чтобы подхватить петлю.</summary>
+        private MediaElement _clipBack;
+        private bool _clipFading;
+
         /// <summary>Синхронизирует фоновый клип с текущим треком и состоянием плеера.</summary>
         public void UpdateBackgroundVideo()
         {
             if (VideoBackground == null) return;
-            if (!LicenseService.IsProCurrent) { StopVideo(); return; }
+            if (!LicenseService.IsProCurrent || !PerformanceService.Clips) { StopVideo(); return; }
 
             try
             {
@@ -1201,56 +1295,121 @@ namespace VeriPlayer
                 }
 
                 if (!string.Equals(_videoPath, path, StringComparison.OrdinalIgnoreCase))
-                {
-                    _videoPath = path;
-                    VideoBackground.Stop();
-                    VideoBackground.Source = new Uri(path, UriKind.Absolute);
-                    VideoBackground.Position = TimeSpan.Zero;
-                }
+                    LoadClip(path);
 
-                VideoBackground.Visibility = Visibility.Visible;
                 if (AudioService.IsPlaying)
                 {
-                    VideoBackground.Play();
+                    _clipFront.Play();
+                    if (_clipFading) _clipBack.Play();
                     StartVideoLoopGuard();
                 }
                 else
                 {
-                    VideoBackground.Pause();
+                    _clipFront.Pause();
+                    if (_clipFading) _clipBack.Pause();
                     _videoLoopTimer?.Stop();
                 }
             }
             catch { StopVideo(); }
         }
 
+        /// <summary>Открывает клип в обоих проигрывателях: первый показывает его, второй ждёт на первом кадре.</summary>
+        private void LoadClip(string path)
+        {
+            _videoPath = path;
+            _clipFading = false;
+            _clipFront = VideoBackground;
+            _clipBack = VideoBackground2;
+
+            var uri = new Uri(path, UriKind.Absolute);
+            foreach (var clip in new[] { _clipFront, _clipBack })
+            {
+                clip.BeginAnimation(OpacityProperty, null);
+                clip.Stop();
+                clip.Source = uri;
+                clip.Position = TimeSpan.Zero;
+                clip.Visibility = Visibility.Visible;
+            }
+
+            _clipFront.Opacity = ClipOpacity;
+            Panel.SetZIndex(_clipFront, 1);
+            // Pause открывает файл и (при ScrubbingEnabled) выводит первый кадр — к стыку он уже готов
+            _clipBack.Opacity = 0;
+            Panel.SetZIndex(_clipBack, 0);
+            _clipBack.Pause();
+        }
+
         private void StartVideoLoopGuard()
         {
             if (_videoLoopTimer == null)
             {
-                _videoLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+                _videoLoopTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(30) };
                 _videoLoopTimer.Tick += (s, e) => GuardVideoLoop();
             }
             _videoLoopTimer.Start();
         }
 
-        /// <summary>Перематывает клип в начало чуть раньше конца — так петля идёт без обрыва и чёрного кадра.</summary>
+        /// <summary>Незадолго до конца клипа запускает переход на его начало.</summary>
         private void GuardVideoLoop()
         {
             try
             {
-                if (VideoBackground.Visibility != Visibility.Visible) return;
-                if (!AudioService.IsPlaying) return;
+                if (_clipFront == null || _clipFading || !AudioService.IsPlaying) return;
+                if (_clipFront.Visibility != Visibility.Visible) return;
 
-                var dur = VideoBackground.NaturalDuration;
+                var dur = _clipFront.NaturalDuration;
                 if (!dur.HasTimeSpan) return;
 
                 var total = dur.TimeSpan.TotalSeconds;
-                if (total <= 0.5) return;
+                if (total <= 0.3) return;
 
-                if (VideoBackground.Position.TotalSeconds >= Math.Max(0.1, total - 0.2))
-                    VideoBackground.Position = TimeSpan.Zero;
+                // переход должен закончиться раньше, чем клип дойдёт до конца, — с запасом на неточную позицию
+                double fade = Math.Min(ClipFadeSeconds, total * 0.3);
+                if (_clipFront.Position.TotalSeconds >= total - fade - 0.15)
+                    CrossfadeClip(fade);
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Второй проигрыватель стартует с начала и плавно проявляется поверх первого, который ещё
+        /// доигрывает последние кадры. Перемотка идёт уже у невидимого — чёрного кадра не видно.
+        /// </summary>
+        private void CrossfadeClip(double seconds)
+        {
+            var prev = _clipFront;
+            var next = _clipBack;
+            if (prev == null || next == null) return;
+            _clipFading = true;
+
+            // второй уже стоит на первом кадре (его перемотали, пока он был невидим) — только запускаем
+            Panel.SetZIndex(next, 2);
+            Panel.SetZIndex(prev, 1);
+            next.Play();
+
+            var fade = new DoubleAnimation(0, ClipOpacity, TimeSpan.FromSeconds(seconds))
+            {
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            fade.Completed += (s, e) => FinishCrossfade(prev, next);
+            next.BeginAnimation(OpacityProperty, fade);
+        }
+
+        /// <summary>Новый круг полностью виден: прежний проигрыватель уходит вниз и ждёт на первом кадре.</summary>
+        private void FinishCrossfade(MediaElement prev, MediaElement next)
+        {
+            if (!_clipFading || !ReferenceEquals(_clipBack, next)) return; // уже завершён или клип сменился
+            next.BeginAnimation(OpacityProperty, null);
+            next.Opacity = ClipOpacity;
+
+            prev.Pause();
+            prev.Opacity = 0;
+            prev.Position = TimeSpan.Zero;
+            Panel.SetZIndex(prev, 0);
+
+            _clipFront = next;
+            _clipBack = prev;
+            _clipFading = false;
         }
 
         private void StopVideo()
@@ -1258,35 +1417,32 @@ namespace VeriPlayer
             try
             {
                 _videoLoopTimer?.Stop();
-                if (VideoBackground != null)
+                foreach (var clip in new[] { VideoBackground, VideoBackground2 })
                 {
-                    VideoBackground.Stop();
-                    VideoBackground.Visibility = Visibility.Collapsed;
+                    if (clip == null) continue;
+                    clip.BeginAnimation(OpacityProperty, null);
+                    clip.Opacity = 0;
+                    clip.Stop();
+                    clip.Visibility = Visibility.Collapsed;
                 }
             }
             catch { }
             _videoPath = null;
+            _clipFading = false;
         }
 
+        /// <summary>
+        /// Запасной путь: видимый клип всё же дошёл до конца раньше перехода. В конце MediaElement
+        /// на мгновение гаснет в чёрный, поэтому второй (уже стоящий на первом кадре) показываем сразу.
+        /// </summary>
         private void VideoBackground_MediaEnded(object sender, RoutedEventArgs e)
         {
-            // Крутим клип по кругу. НЕ вызываем Stop() — он очищает кадр и даёт чёрную вспышку.
-            // Просто возвращаем позицию в начало и продолжаем; стык маскируем лёгким проявлением.
             try
             {
-                VideoBackground.Position = TimeSpan.Zero;
-                VideoBackground.Play();
-
-                var fade = new System.Windows.Media.Animation.DoubleAnimation(0.55, 0.92, TimeSpan.FromMilliseconds(150))
-                {
-                    EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                fade.Completed += (s2, e2) =>
-                {
-                    try { VideoBackground.BeginAnimation(OpacityProperty, null); }
-                    catch { }
-                };
-                VideoBackground.BeginAnimation(OpacityProperty, fade);
+                if (!ReferenceEquals(sender, _clipFront) || !AudioService.IsPlaying) return;
+                // переход уже идёт — доводим его мгновенно, иначе начинаем почти без растворения
+                if (_clipFading) FinishCrossfade(_clipFront, _clipBack);
+                else CrossfadeClip(0.05);
             }
             catch { }
         }
@@ -1377,7 +1533,6 @@ namespace VeriPlayer
         {
             if (RequirePro("Свой фон")) ShowPanel(new BackgroundPanel());
         }
-        private void BtnServices_Click(object sender, RoutedEventArgs e) => ShowPanel(new SpotifyPanel());
         private void BtnSettings_Click(object sender, RoutedEventArgs e) => ShowPanel(new SettingsPanel());
         private void UserCard_Click(object sender, MouseButtonEventArgs e) => ShowPanel(new ProfilePanel());
 
@@ -1403,14 +1558,14 @@ namespace VeriPlayer
 
             if (_adminOpen)
             {
-                ContentHost.Content = _player;
+                SetContent(_player);
                 RefreshLibrary();
                 AnimateView(_player);
             }
             else
             {
                 _admin.Refresh();
-                ContentHost.Content = _admin;
+                SetContent(_admin);
                 PageTitle.Text = "Панель владельца";
                 NavList.SelectedItem = null;
                 PlaylistList.SelectedItem = null;
@@ -1424,11 +1579,12 @@ namespace VeriPlayer
             UserAvatar.Source = AuthService.Current.AvatarPath;
             UserAvatar.Initial = AuthService.Current.Initial;
             UserName.Text = AuthService.Current.Nick;
-            UserRole.Text = AuthService.Current.RoleLabel;
+            UpdateUserStats();
         }
 
         public void Logout()
         {
+            ListeningService.EndUser();
             AudioService.Stop();
             AuthService.Logout();
             CloseModal();
@@ -1441,7 +1597,7 @@ namespace VeriPlayer
             _admin = null;
             _view = "library";
             _currentPlaylist = null;
-            ContentHost.Content = null;
+            SetContent(null);
             PlaylistList.ItemsSource = null;
             SearchInput.Clear();
 

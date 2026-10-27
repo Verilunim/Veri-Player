@@ -364,6 +364,32 @@ namespace VeriPlayer.Services
             if (track == null) return;
             track.Plays++;
             track.LastPlayedAt = DateTime.Now;
+            SaveSoon();
+        }
+
+        private static System.Windows.Threading.DispatcherTimer _saveTimer;
+
+        /// <summary>
+        /// Счётчик прослушиваний сохраняем не на каждый трек, а пачкой через несколько секунд:
+        /// на большой библиотеке запись всего файла при каждом переключении заметно тормозила.
+        /// </summary>
+        private static void SaveSoon()
+        {
+            if (System.Windows.Application.Current == null) { Save(); return; }
+            if (_saveTimer == null)
+            {
+                _saveTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+                _saveTimer.Tick += (s, e) => Flush();
+            }
+            _saveTimer.Stop();
+            _saveTimer.Start();
+        }
+
+        /// <summary>Записать отложенные изменения сразу (при выходе из программы).</summary>
+        public static void Flush()
+        {
+            if (_saveTimer == null || !_saveTimer.IsEnabled) return;
+            _saveTimer.Stop();
             Save();
         }
 
@@ -390,6 +416,7 @@ namespace VeriPlayer.Services
                 case "album": q = q.OrderBy(t => t.Album, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.DisplayTitle, StringComparer.CurrentCultureIgnoreCase); break;
                 case "duration": q = q.OrderByDescending(t => t.Duration); break;
                 case "plays": q = q.OrderByDescending(t => t.Plays); break;
+                case "foryou": q = TasteService.Rank(q, UserDataService.Current); break;
                 default: q = q.OrderByDescending(t => t.AddedAt); break;
             }
 

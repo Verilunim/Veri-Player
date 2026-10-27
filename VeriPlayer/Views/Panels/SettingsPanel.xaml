@@ -11,6 +11,7 @@
                 <StackPanel>
                     <TextBlock Text="Сортировка по умолчанию" Style="{StaticResource FieldLabel}" />
                     <ComboBox x:Name="SortBox" SelectionChanged="Sort_Changed" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Для вас" Tag="foryou" />
                         <ComboBoxItem Content="Недавно добавленные" Tag="added" />
                         <ComboBoxItem Content="По названию" Tag="title" />
                         <ComboBoxItem Content="По исполнителю" Tag="artist" />
@@ -27,7 +28,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <Button Style="{StaticResource BtnGhost}" Click="OpenData_Click">
                             <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconFolder}" Width="17" Height="17" Stretch="None"
+                                <Path Data="{StaticResource IconFolder}" Width="17" Height="17" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                       StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round" />
@@ -47,6 +48,9 @@
                               Click="Motion_Click" />
                     <CheckBox x:Name="VisualizerToggle" Content="Показывать спектр звука" Margin="0,12,0,0"
                               Click="Visualizer_Click" />
+                    <CheckBox x:Name="LiteToggle" Content="Облегчённый режим для слабых ПК" Margin="0,12,0,0"
+                              Click="Lite_Click" />
+                    <TextBlock x:Name="LiteHint" Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="30,4,0,0" />
                 </StackPanel>
             </Border>
 
@@ -59,8 +63,6 @@
             <Border Style="{StaticResource Card}" Padding="16" Margin="0,8,0,0">
                 <StackPanel>
                     <TextBlock x:Name="AboutText" Style="{StaticResource TextMuted}" TextWrapping="Wrap" />
-                    <TextBlock Style="{StaticResource TextCaption}" TextWrapping="Wrap" Margin="0,10,0,0"
-                               Text="Spotify подключается по вашему Client ID (в разделе «Сервисы»). Воспроизведение музыки сторонних сервисов возможно только в самих этих сервисах — Veri Player играет ваши файлы." />
                 </StackPanel>
             </Border>
 

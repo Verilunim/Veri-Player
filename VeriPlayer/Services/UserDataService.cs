@@ -20,6 +20,8 @@ namespace VeriPlayer.Services
             data.Favorites ??= new List<string>();
             data.Recent ??= new List<string>();
             data.Playlists ??= new List<Playlist>();
+            data.TrackSeconds ??= new Dictionary<string, double>();
+            data.Skips ??= new Dictionary<string, int>();
             Cache[userId] = data;
             return data;
         }
@@ -123,6 +125,8 @@ namespace VeriPlayer.Services
                 var data = For(user.Id);
                 data.Favorites.Remove(trackId);
                 data.Recent.Remove(trackId);
+                data.TrackSeconds.Remove(trackId);
+                data.Skips.Remove(trackId);
                 foreach (var pl in data.Playlists) pl.TrackIds.Remove(trackId);
                 Storage.Save(Storage.UserDataFile(user.Id), data);
             }

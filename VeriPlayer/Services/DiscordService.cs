@@ -6,7 +6,7 @@ using VeriPlayer.Models;
 namespace VeriPlayer.Services
 {
     /// <summary>
-    /// Показывает текущий трек в Discord через Rich Presence (как Spotify).
+    /// Показывает текущий трек в Discord через Rich Presence.
     /// </summary>
     public static class DiscordService
     {

@@ -11,7 +11,8 @@ namespace VeriPlayer.Views
 {
     /// <summary>
     /// Выпуск ключей Pro+ и определение их срока — только для владельца и со-владельца.
-    /// Подписывает закрытым ключом с диска (тем же, что и утилита VeriKeygen), в программу он не встроен.
+    /// Выпуск закрыт API-ключом: только он расшифровывает встроенный ключ подписи.
+    /// Расшифрованный ключ живёт в памяти, пока открыто окно.
     /// </summary>
     public partial class KeyGeneratorWindow : Window
     {
@@ -23,10 +24,9 @@ namespace VeriPlayer.Views
 
             NickBox.Text = nick ?? "";
 
-            LoadSigner(string.IsNullOrWhiteSpace(App.Settings.LicensePrivateKeyPath)
-                ? LicenseService.DefaultPrivateKeyPath
-                : App.Settings.LicensePrivateKeyPath);
+            SetLocked("Введите API-ключ, чтобы выпускать ключи. Проверять ключи можно и без него.", false);
             UpdateSummary();
+            Loaded += (s, e) => ApiKeyBox.Focus();
             RefreshIssued();
 
             Closed += (s, e) => _signer?.Dispose();
@@ -43,35 +43,48 @@ namespace VeriPlayer.Views
             new KeyGeneratorWindow(nick) { Owner = owner }.Show();
         }
 
-        // ------------------------------------------------------------------ закрытый ключ
+        // ------------------------------------------------------------------ API-ключ
 
-        private void LoadSigner(string path)
+        private void SetLocked(string message, bool error)
         {
             _signer?.Dispose();
-            var (signer, error) = LicenseService.LoadSigner(path);
-            _signer = signer;
-            SignerStatus.Text = signer != null ? "Готов к работе: " + path : error;
-            SignerStatus.Foreground = signer != null
-                ? (System.Windows.Media.Brush)FindResource("SuccessBrush")
-                : (System.Windows.Media.Brush)FindResource("DangerBrush");
-            IssueButton.IsEnabled = signer != null;
+            _signer = null;
+            IssueButton.IsEnabled = false;
+            ApiKeyRow.Visibility = Visibility.Visible;
+            SignerStatus.Text = message;
+            SignerStatus.Foreground = (System.Windows.Media.Brush)FindResource(error ? "DangerBrush" : "TextMutedBrush");
         }
 
-        private void PickSigner_Click(object sender, RoutedEventArgs e)
+        private async void Unlock_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Закрытый ключ подписи Pro+",
-                Filter = "Закрытый ключ (*.pem)|*.pem|Все файлы|*.*"
-            };
-            if (dialog.ShowDialog(this) != true) return;
+            var apiKey = ApiKeyBox.Password;
+            UnlockButton.IsEnabled = false;
+            SignerStatus.Text = "Проверяем ключ…";
+            SignerStatus.Foreground = (System.Windows.Media.Brush)FindResource("TextMutedBrush");
 
-            LoadSigner(dialog.FileName);
-            if (_signer != null)
+            // 600 000 итераций PBKDF2 — заметная доля секунды, не держим окно
+            var (signer, error) = await System.Threading.Tasks.Task.Run(() => LicenseService.Unlock(apiKey));
+            UnlockButton.IsEnabled = true;
+            ApiKeyBox.Clear();
+
+            if (signer == null)
             {
-                App.Settings.LicensePrivateKeyPath = dialog.FileName;
-                App.SaveSettings();
+                SetLocked(error, true);
+                ApiKeyBox.Focus();
+                return;
             }
+
+            _signer = signer;
+            IssueButton.IsEnabled = true;
+            ApiKeyRow.Visibility = Visibility.Collapsed;
+            SignerStatus.Text = "Выпуск разблокирован до закрытия окна.";
+            SignerStatus.Foreground = (System.Windows.Media.Brush)FindResource("SuccessBrush");
+            NickBox.Focus();
+        }
+
+        private void ApiKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && UnlockButton.IsEnabled) Unlock_Click(sender, e);
         }
 
         // ------------------------------------------------------------------ срок

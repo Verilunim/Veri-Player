@@ -41,20 +41,23 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
                 <StackPanel Margin="24,8,24,8">
 
-                    <!-- ===== закрытый ключ ===== -->
+                    <!-- ===== API-ключ выпуска ===== -->
                     <Border Style="{StaticResource Card}" Padding="16,13">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Закрытый ключ подписи" Style="{StaticResource FieldLabel}" Margin="0,0,0,3" />
-                                <TextBlock x:Name="SignerStatus" Style="{StaticResource TextCaption}" TextWrapping="Wrap" />
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Выбрать файл…" Style="{StaticResource BtnGhost}"
-                                    Margin="12,0,0,0" VerticalAlignment="Center" Click="PickSigner_Click" />
-                        </Grid>
+                        <StackPanel>
+                            <TextBlock Text="API-ключ выпуска" Style="{StaticResource FieldLabel}" Margin="0,0,0,6" />
+                            <Grid x:Name="ApiKeyRow">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="ApiKeyBox" MaxLength="60" KeyDown="ApiKey_KeyDown"
+                                             ToolTip="XXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXX" />
+                                <Button x:Name="UnlockButton" Grid.Column="1" Content="Разблокировать"
+                                        Style="{StaticResource BtnPrimary}" Margin="10,0,0,0" Click="Unlock_Click" />
+                            </Grid>
+                            <TextBlock x:Name="SignerStatus" Style="{StaticResource TextCaption}" TextWrapping="Wrap"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
                     </Border>
 
                     <!-- ===== выпуск ===== -->
@@ -93,7 +96,7 @@
                                Margin="2,12,0,0" />
 
                     <StackPanel x:Name="IssueError" Orientation="Horizontal" Margin="2,10,0,0" Visibility="Collapsed">
-                        <Path Data="{StaticResource IconInfo}" Width="16" Height="16" Stretch="None"
+                        <Path Data="{StaticResource IconInfo}" Width="16" Height="16" Stretch="Uniform"
                               Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.7"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
                         <TextBlock x:Name="IssueErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12.5"

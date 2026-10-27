@@ -13,11 +13,9 @@ namespace VeriPlayer.Controls
         private readonly float[] _level = new float[Bins];
         private readonly float[] _target = new float[Bins];
         private readonly float[] _peak = new float[Bins];
-        private readonly Random _random = new Random();
         private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
         private double _lastFrame;
         private double _time;
-        private bool _attached;
         private bool _live;
 
         public static readonly DependencyProperty ActiveProperty = DependencyProperty.Register(
@@ -42,25 +40,67 @@ namespace VeriPlayer.Controls
             if (d is SpectrumVisualizer viz) viz._live = (bool)e.NewValue;
         }
 
+        private bool _loaded;
+        private bool _rendering;
+        private double _settledFor;
+
+        /// <summary>Облегчённый режим: спектр не анимируется вовсе.</summary>
+        public static bool Enabled { get; set; } = true;
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (_attached) return;
-            _attached = true;
+            if (_loaded) return;
+            _loaded = true;
             AudioService.Spectrum += OnSpectrum;
-            _lastFrame = _clock.Elapsed.TotalSeconds;
-            CompositionTarget.Rendering += OnFrame;
+            AudioService.StateChanged += OnStateChanged;
+            IsVisibleChanged += OnVisibleChanged;
+            UpdateRendering();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (!_attached) return;
-            _attached = false;
+            if (!_loaded) return;
+            _loaded = false;
             AudioService.Spectrum -= OnSpectrum;
-            CompositionTarget.Rendering -= OnFrame;
+            AudioService.StateChanged -= OnStateChanged;
+            IsVisibleChanged -= OnVisibleChanged;
+            UpdateRendering();
+        }
+
+        private void OnStateChanged(bool playing) => Dispatcher.BeginInvoke(new Action(UpdateRendering));
+        private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) => UpdateRendering();
+
+        /// <summary>
+        /// Кадры нужны только пока играет музыка (и ещё секунду, чтобы полосы плавно опустились).
+        /// Раньше спектр рисовал «волну» 50 раз в секунду и в покое — это и грузило слабые ПК.
+        /// </summary>
+        private void UpdateRendering()
+        {
+            bool want = _loaded && Enabled && IsVisible && (AudioService.IsPlaying || !Settled());
+            if (want == _rendering) return;
+            _rendering = want;
+            if (want)
+            {
+                _settledFor = 0;
+                _lastFrame = _clock.Elapsed.TotalSeconds;
+                CompositionTarget.Rendering += OnFrame;
+            }
+            else
+            {
+                CompositionTarget.Rendering -= OnFrame;
+            }
+        }
+
+        private bool Settled()
+        {
+            for (int i = 0; i < Bins; i++)
+                if (_level[i] > 0.015f || _peak[i] > 0.02f) return false;
+            return true;
         }
 
         private void OnSpectrum(float[] bins)
         {
+            if (!Enabled) return;
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null) return;
             dispatcher.BeginInvoke(new Action(() =>
@@ -68,6 +108,7 @@ namespace VeriPlayer.Controls
                 _live = true;
                 for (int i = 0; i < Bins; i++)
                     _target[i] = i < bins.Length ? bins[i] : 0f;
+                if (!_rendering) UpdateRendering();
             }), System.Windows.Threading.DispatcherPriority.Render);
         }
 
@@ -92,9 +133,8 @@ namespace VeriPlayer.Controls
                 }
                 else
                 {
-                    // «живой покой» — лёгкая волна, чтобы панель не выглядела мёртвой
-                    double idle = 0.05 + 0.045 * Math.Sin(_time * 1.4 - i * 0.35);
-                    target = (float)Math.Max(0, idle + 0.02 * _random.NextDouble());
+                    // на паузе полосы плавно опускаются, после чего кадры больше не нужны
+                    target = 0f;
                 }
 
                 float speed = target > _level[i] ? 0.42f : 0.13f;
@@ -106,6 +146,33 @@ namespace VeriPlayer.Controls
 
             if (!playing) _live = false;
             InvalidateVisual();
+
+            if (!playing && Settled())
+            {
+                _settledFor += dt;
+                if (_settledFor > 0.3) UpdateRendering();
+            }
+        }
+
+        // кисти пересоздаём только при смене цвета темы, а не на каждом кадре
+        private Color _brushAccent, _brushSecond;
+        private Brush _barBrush;
+        private static readonly Brush PeakBrush = ThemeService.Solid(ThemeService.Alpha(Colors.White, 0x99));
+
+        private Brush BarBrush()
+        {
+            var accent = ThemeService.AccentColor;
+            var second = ThemeService.SecondColor;
+            if (_barBrush != null && accent == _brushAccent && second == _brushSecond) return _barBrush;
+
+            var gradient = new LinearGradientBrush { StartPoint = new Point(0, 1), EndPoint = new Point(0, 0) };
+            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(accent, 0x33), 0));
+            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(accent, 0xCC), 0.55));
+            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(second, 0xFF), 1));
+            gradient.Freeze();
+            _brushAccent = accent;
+            _brushSecond = second;
+            return _barBrush = gradient;
         }
 
         protected override void OnRender(DrawingContext dc)
@@ -114,20 +181,8 @@ namespace VeriPlayer.Controls
             double height = ActualHeight;
             if (width < 8 || height < 8) return;
 
-            var accent = ThemeService.AccentColor;
-            var second = ThemeService.SecondColor;
-
-            var gradient = new LinearGradientBrush
-            {
-                StartPoint = new Point(0, 1),
-                EndPoint = new Point(0, 0)
-            };
-            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(accent, 0x33), 0));
-            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(accent, 0xCC), 0.55));
-            gradient.GradientStops.Add(new GradientStop(ThemeService.Alpha(second, 0xFF), 1));
-            gradient.Freeze();
-
-            var peakBrush = ThemeService.Solid(ThemeService.Alpha(Colors.White, 0x99));
+            var gradient = BarBrush();
+            var peakBrush = PeakBrush;
 
             double gap = 3;
             double barWidth = Math.Max(2.0, (width - gap * (Bins - 1)) / Bins);

@@ -56,16 +56,22 @@ namespace VeriPlayer
                 SaveSettings();
             }
 
+            // подборка «Для вас»: один раз делаем её сортировкой по умолчанию
+            if (Settings.TasteVersion < 1)
+            {
+                Settings.SortMode = "foryou";
+                Settings.TasteVersion = 1;
+                SaveSettings();
+            }
+
+            PerformanceService.Detect();
             ThemeService.Apply(Settings);
 
             AuthService.Init();
             LibraryService.Init();
             BackgroundService.Init();
-            SpotifyService.Init();
-            SoundCloudService.Init();
-            YouTubeMusicService.Init();
             AudioService.Init();
-            MusicGenService.Init();
+            ListeningService.Init();
             AudioService.Volume = Settings.Muted ? 0 : Settings.Volume;
             AudioService.Shuffle = Settings.Shuffle;
             AudioService.Repeat = Settings.Repeat;
@@ -107,6 +113,8 @@ namespace VeriPlayer
             try
             {
                 AudioService.Shutdown();
+                LibraryService.Flush();
+                DownloadsWatcher.Stop();
                 SaveSettings();
             }
             catch { }
@@ -470,9 +478,6 @@ namespace VeriPlayer
                 case "bg": return new BackgroundPanel();
                 case "settings": return new SettingsPanel();
                 case "profile": return new ProfilePanel();
-                case "spotify": return new SpotifyPanel();
-                case "generate":
-                case "gen": return new GenerateMusicPanel();
                 case "share":
                     {
                         var track = LibraryService.Tracks.FirstOrDefault();

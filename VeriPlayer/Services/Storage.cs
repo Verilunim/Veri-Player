@@ -53,7 +53,6 @@ namespace VeriPlayer.Services
         public static string SettingsFile => Path.Combine(Root, "settings.json");
         public static string LibraryFile => Path.Combine(Root, "library.json");
         public static string BackgroundsFile => Path.Combine(Root, "backgrounds.json");
-        public static string SpotifyFile => Path.Combine(Root, "spotify.json");
 
         public static string UserDataFile(string userId) => Path.Combine(UserDataDir, userId + ".json");
 

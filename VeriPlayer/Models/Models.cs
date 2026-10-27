@@ -101,14 +101,16 @@ namespace VeriPlayer.Models
         public int Plays { get; set; }
         public DateTime LastPlayedAt { get; set; }
 
-        /// <summary>Откуда трек: пусто — локальный файл, "soundcloud" — поток из SoundCloud.</summary>
+        /// <summary>Откуда трек: пусто — локальный файл (остальное — от прежних версий).</summary>
         public string Source { get; set; } = "";
-        /// <summary>Идентификатор трека в сервисе (для SoundCloud — urn).</summary>
+        /// <summary>Идентификатор трека во внешнем источнике.</summary>
         public string RemoteId { get; set; } = "";
-        /// <summary>Страница трека в сервисе — по правилам SoundCloud на неё нужна ссылка.</summary>
+        /// <summary>Страница трека во внешнем источнике.</summary>
         public string WebUrl { get; set; } = "";
         /// <summary>Адрес обложки в сервисе; локальная копия появляется в CoverPath.</summary>
         public string ArtworkUrl { get; set; } = "";
+        /// <summary>Автор, лицензия и источник для музыки из поиска (указание авторства по CC).</summary>
+        public string License { get; set; } = "";
 
         [JsonIgnore]
         public bool IsRemote => !string.IsNullOrEmpty(Source);
@@ -177,6 +179,13 @@ namespace VeriPlayer.Models
         public List<string> Favorites { get; set; } = new List<string>();
         public List<string> Recent { get; set; } = new List<string>();
         public List<Playlist> Playlists { get; set; } = new List<Playlist>();
+
+        /// <summary>Сколько всего секунд музыки прослушано. Копится между входами и не сбрасывается.</summary>
+        public double ListenedSeconds { get; set; }
+        /// <summary>Секунды прослушивания по каждому треку — по ним строится подборка «Для вас».</summary>
+        public Dictionary<string, double> TrackSeconds { get; set; } = new Dictionary<string, double>();
+        /// <summary>Сколько раз трек переключили в первые секунды — такие опускаются в подборке.</summary>
+        public Dictionary<string, int> Skips { get; set; } = new Dictionary<string, int>();
     }
 
     public class BackgroundImage
@@ -213,6 +222,8 @@ namespace VeriPlayer.Models
         public double EffectIntensity { get; set; } = 1.0;
         public bool Visualizer { get; set; } = true;
         public bool ReduceMotion { get; set; }
+        /// <summary>Облегчённый режим: null — определять автоматически по железу.</summary>
+        public bool? LiteMode { get; set; }
 
         public string BackgroundId { get; set; } = "";
         public double BackgroundDim { get; set; } = 0.55;
@@ -220,59 +231,15 @@ namespace VeriPlayer.Models
 
         // ---- behaviour ----
         public bool CopyFilesIntoLibrary { get; set; }
-        public string SortMode { get; set; } = "added";
+        public string SortMode { get; set; } = "foryou";
+        /// <summary>Версия подборки: при появлении «Для вас» сортировка один раз переключается на неё.</summary>
+        public int TasteVersion { get; set; }
         public double Volume { get; set; } = 0.8;
         public bool Muted { get; set; }
         public bool Shuffle { get; set; }
         public string Repeat { get; set; } = "off";
         public string LastTrackId { get; set; } = "";
 
-        // ---- services ----
-        public string SpotifyClientId { get; set; } = "";
-        public int SpotifyPort { get; set; } = 8899;
-        
-        // ---- AI music generation ----
-        public string SunoApiKey { get; set; } = "";
-
-        // ---- Pro+ (только для команды) ----
-        /// <summary>Путь к закрытому ключу подписи, если он лежит не на месте по умолчанию.</summary>
-        public string LicensePrivateKeyPath { get; set; } = "";
     }
 
-    public class SpotifyToken
-    {
-        public string AccessToken { get; set; } = "";
-        public string RefreshToken { get; set; } = "";
-        public DateTime ExpiresAt { get; set; }
-        public string Scope { get; set; } = "";
-        public string UserName { get; set; } = "";
-        public string UserId { get; set; } = "";
-    }
-
-    public class SpotifyPlaylistInfo
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Owner { get; set; } = "";
-        public int TrackCount { get; set; }
-        public string ImageUrl { get; set; } = "";
-        public string Url { get; set; } = "";
-        public List<SpotifyTrackInfo> Tracks { get; set; } = new List<SpotifyTrackInfo>();
-    }
-
-    public class SpotifyTrackInfo
-    {
-        public string Name { get; set; } = "";
-        public string Artists { get; set; } = "";
-        public string Album { get; set; } = "";
-        public string Url { get; set; } = "";
-        public string ImageUrl { get; set; } = "";
-        public int DurationMs { get; set; }
-
-        [JsonIgnore]
-        public string DurationText => TimeSpan.FromMilliseconds(Math.Max(0, DurationMs)).ToString(@"m\:ss");
-
-        [JsonIgnore]
-        public string Line => (Artists + " — " + Name).Trim(' ', '—', ' ');
-    }
 }

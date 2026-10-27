@@ -8,7 +8,7 @@
         <StackPanel Orientation="Horizontal">
             <Border Width="44" Height="44" CornerRadius="14" Background="{DynamicResource AccentGradientBrush}"
                     VerticalAlignment="Top">
-                <Path Data="{StaticResource IconSparkle}" Width="22" Height="22" Stretch="None" Stroke="White"
+                <Path Data="{StaticResource IconSparkle}" Width="22" Height="22" Stretch="Uniform" Stroke="White"
                       StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
@@ -37,12 +37,6 @@
                           Stroke="{DynamicResource AccentTextBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
                     <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0" TextWrapping="Wrap" MaxWidth="370"
                                Text="Оформление: RGB-цвета интерфейса, эффекты фона, свои фоновые картинки" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Path Data="{StaticResource IconWand}" Style="{StaticResource IconBase}" Width="17" Height="17"
-                          Stroke="{DynamicResource AccentTextBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
-                    <TextBlock Style="{StaticResource TextBody}" Margin="11,0,0,0" TextWrapping="Wrap" MaxWidth="370"
-                               Text="Создание музыки с AI" />
                 </StackPanel>
             </StackPanel>
         </Border>

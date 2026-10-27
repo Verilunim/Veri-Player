@@ -9,8 +9,9 @@ using VeriPlayer.Models;
 namespace VeriPlayer.Services
 {
     /// <summary>
-    /// Подписка Pro+: ключи подписаны закрытым ключом владельца (утилита tools/VeriKeygen),
-    /// приложение знает только открытый — подделать ключ или включить Pro+ правкой файлов нельзя.
+    /// Подписка Pro+: ключи подписаны закрытым ключом владельца. Для проверки программе хватает
+    /// открытого ключа; закрытый встроен только зашифрованным и открывается API-ключом выпуска,
+    /// поэтому подделать ключ или выпустить его без API-ключа нельзя.
     /// Владелец и со-владелец получают Pro+ по роли.
     /// </summary>
     public static class LicenseService
@@ -76,7 +77,7 @@ namespace VeriPlayer.Services
             if (!LicenseFormat.TryVerify(key, Verifier, out var payload))
                 return (false, "Ключ недействителен. Проверьте, что он скопирован целиком.");
             if (!string.Equals(payload.n.Trim(), user.Nick.Trim(), StringComparison.OrdinalIgnoreCase))
-                return (false, "Этот ключ выпущен для другого аккаунта («" + payload.n + "»).");
+                return (false, "Этот ключ уже не активен."); // чей это ключ — не раскрываем
             if (payload.ExpiresUtc is DateTime end && DateTime.UtcNow >= end)
                 return (false, "Срок действия этого ключа уже закончился.");
 
@@ -101,10 +102,6 @@ namespace VeriPlayer.Services
 
         // ================================================================== выпуск ключей (команда)
 
-        /// <summary>Где утилита VeriKeygen хранит закрытый ключ по умолчанию.</summary>
-        public static string DefaultPrivateKeyPath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".veriplayer", "license-private.pem");
-
         public static string IssuedFile => Path.Combine(Storage.Root, "issued-keys.json");
 
         public sealed class IssuedKey
@@ -125,29 +122,99 @@ namespace VeriPlayer.Services
 
         private static bool CanIssue => AuthService.Current?.IsStaff == true;
 
+        // ------------------------------------------------------------------ API-ключ выпуска
+        //
+        // Закрытый ключ подписи встроен в программу только в зашифрованном виде (AES-256-GCM).
+        // Ключ шифрования выводится из API-ключа выпуска (PBKDF2-SHA256), а сам API-ключ нигде
+        // в коде не хранится: без него расшифровать ключ подписи и выпустить Pro+ невозможно.
+        // Неверный API-ключ не проходит проверку тега GCM — подобрать его перебором нереально
+        // (40 символов из 32 ≈ 200 бит), а каждая попытка ещё и стоит 600 000 итераций PBKDF2.
+
+        private const int VaultIterations = 600_000;
+        private const string VaultSalt = "pVXWXB2R2JMCYBzCVKORWA==";
+        private const string VaultNonce = "x5ue85GxsF3bba0P";
+        private const string VaultTag = "k6R1Iwgu7WO2L5i3RKW8Ig==";
+        private const string VaultCipher =
+            "Hlwm5ItdnxG+/WFel55JQp6zO1edZgBJGIWj2LjXq67xxGNRYuQw29Cc2g4OmCKSXDuyGZ0hRLuir1J2o2vGkoiWLK0oGVrEuF6YIEnKvy92" +
+            "SFFp0qKuwc5Eywn6qFtJaSblY1xy7fjOqDyJNcOmo8xzxi54K8Lzvw/GNTTJRKICY1kZ4V/uo5KP";
+
+        /// <summary>Формат API-ключа: 20 символов, дефис, ещё 20 (заглавные латинские буквы и цифры).</summary>
+        private static readonly System.Text.RegularExpressions.Regex ApiKeyFormat =
+            new System.Text.RegularExpressions.Regex("^[A-Z0-9]{20}-[A-Z0-9]{20}$");
+
+        private const int MaxApiAttempts = 5;
+        private static readonly TimeSpan ApiLockout = TimeSpan.FromMinutes(2);
+        private static int _apiFailures;
+        private static DateTime _apiLockedUntil;
+
+        /// <summary>Unlock может работать в фоне, а журнал трогает интерфейс — пишем из UI-потока.</summary>
+        private static void LogOnUi(string text) =>
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => AuthService.LogActivity("pro", text)));
+
+        /// <summary>Приводит введённый API-ключ к виду XXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXX.</summary>
+        public static string NormalizeApiKey(string input) =>
+            string.Concat((input ?? "").Where(c => !char.IsWhiteSpace(c))).ToUpperInvariant();
+
         /// <summary>
-        /// Загружает закрытый ключ и проверяет, что он парный ключу, вшитому в программу:
-        /// иначе выданные им ключи не прошли бы проверку.
+        /// Расшифровывает встроенный ключ подписи API-ключом выпуска.
+        /// После нескольких неверных попыток подряд ввод на время блокируется.
         /// </summary>
-        public static (ECDsa signer, string error) LoadSigner(string path)
+        public static (ECDsa signer, string error) Unlock(string apiKey)
         {
             if (!CanIssue) return (null, "Выпуск ключей доступен только владельцу и со-владельцу.");
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-                return (null, "Файл закрытого ключа не найден. Создайте его командой «VeriKeygen init» или выберите файл.");
+
+            if (DateTime.UtcNow < _apiLockedUntil)
+            {
+                var left = (int)Math.Ceiling((_apiLockedUntil - DateTime.UtcNow).TotalSeconds);
+                return (null, "Слишком много неверных попыток. Попробуйте через " + left + " с.");
+            }
+
+            apiKey = NormalizeApiKey(apiKey);
+            if (apiKey.Length == 0) return (null, "Введите API-ключ выпуска.");
+            if (!ApiKeyFormat.IsMatch(apiKey))
+                return (null, "Неверный формат: нужно 20 символов, дефис и ещё 20 (буквы A–Z и цифры).");
+
+            byte[] plain = null;
             try
             {
+                var cipher = Convert.FromBase64String(VaultCipher);
+                var key = Rfc2898DeriveBytes.Pbkdf2(System.Text.Encoding.UTF8.GetBytes(apiKey),
+                    Convert.FromBase64String(VaultSalt), VaultIterations, HashAlgorithmName.SHA256, 32);
+                plain = new byte[cipher.Length];
+                using (var aes = new AesGcm(key, 16))
+                    aes.Decrypt(Convert.FromBase64String(VaultNonce), cipher, Convert.FromBase64String(VaultTag), plain);
+                CryptographicOperations.ZeroMemory(key);
+
                 var ecdsa = ECDsa.Create();
-                ecdsa.ImportFromPem(File.ReadAllText(path));
+                ecdsa.ImportPkcs8PrivateKey(plain, out _);
                 if (!ecdsa.ExportSubjectPublicKeyInfo().SequenceEqual(Convert.FromBase64String(PublicKey)))
                 {
                     ecdsa.Dispose();
-                    return (null, "Этот закрытый ключ не подходит к программе: подписанные им ключи не пройдут проверку.");
+                    return (null, "Встроенный ключ подписи не совпадает с проверочным — сборка повреждена.");
                 }
+
+                _apiFailures = 0;
+                LogOnUi("Выпуск ключей Pro+ разблокирован API-ключом");
                 return (ecdsa, null);
+            }
+            catch (AuthenticationTagMismatchException)
+            {
+                if (++_apiFailures >= MaxApiAttempts)
+                {
+                    _apiFailures = 0;
+                    _apiLockedUntil = DateTime.UtcNow + ApiLockout;
+                    LogOnUi("Выпуск ключей заблокирован: " + MaxApiAttempts + " неверных API-ключей подряд");
+                    return (null, "Неверный API-ключ. Ввод заблокирован на " + (int)ApiLockout.TotalMinutes + " мин.");
+                }
+                return (null, "Неверный API-ключ. Осталось попыток: " + (MaxApiAttempts - _apiFailures) + ".");
             }
             catch (Exception ex)
             {
-                return (null, "Не удалось прочитать закрытый ключ: " + ex.Message);
+                return (null, "Не удалось разблокировать выпуск: " + ex.Message);
+            }
+            finally
+            {
+                if (plain != null) CryptographicOperations.ZeroMemory(plain);
             }
         }
 
@@ -155,7 +222,7 @@ namespace VeriPlayer.Services
         public static (string key, string error) Issue(ECDsa signer, string nick, DateTime? lastDay)
         {
             if (!CanIssue) return (null, "Выпуск ключей доступен только владельцу и со-владельцу.");
-            if (signer == null) return (null, "Сначала укажите файл закрытого ключа.");
+            if (signer == null) return (null, "Сначала введите API-ключ выпуска.");
             nick = (nick ?? "").Trim();
             if (nick.Length == 0) return (null, "Укажите ник пользователя.");
             if (lastDay != null && lastDay.Value.Date < DateTime.UtcNow.Date)

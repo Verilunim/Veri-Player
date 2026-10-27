@@ -28,23 +28,12 @@ namespace VeriPlayer.Services
                     Visible = false
                 };
 
-                // Загружаем иконку из ресурсов
+                // логотип берём из самого exe: в однофайловой сборке папки Assets рядом нет
                 try
                 {
-                    var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "logo.ico");
-                    Diagnostics.Log("TrayService: trying icon path: " + iconPath);
-                    
-                    if (File.Exists(iconPath))
-                    {
-                        _trayIcon.Icon = new System.Drawing.Icon(iconPath);
-                        Diagnostics.Log("TrayService: icon loaded successfully");
-                    }
-                    else
-                    {
-                        // Fallback: используем стандартную иконку приложения
-                        Diagnostics.Log("TrayService: icon file not found, using default");
-                        _trayIcon.Icon = System.Drawing.SystemIcons.Application;
-                    }
+                    var exe = Environment.ProcessPath;
+                    _trayIcon.Icon = (!string.IsNullOrEmpty(exe) ? System.Drawing.Icon.ExtractAssociatedIcon(exe) : null)
+                                     ?? System.Drawing.SystemIcons.Application;
                 }
                 catch (Exception ex)
                 {
@@ -88,19 +77,34 @@ namespace VeriPlayer.Services
 
         private static void BuildContextMenu()
         {
-            var menu = new WinForms.ContextMenuStrip();
+            var menu = new WinForms.ContextMenuStrip { ShowImageMargin = false };
 
-            var playPauseItem = new WinForms.ToolStripMenuItem("▶ Играть / Пауза");
+            // сверху — что играет сейчас; символы ▶⏭ в тексте пунктов съезжали, поэтому без них
+            var nowItem = new WinForms.ToolStripMenuItem { Enabled = false };
+            menu.Items.Add(nowItem);
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+
+            var prevItem = new WinForms.ToolStripMenuItem("Предыдущий трек");
+            prevItem.Click += (s, e) => AudioService.Previous();
+            menu.Items.Add(prevItem);
+
+            var playPauseItem = new WinForms.ToolStripMenuItem("Играть");
             playPauseItem.Click += (s, e) => AudioService.TogglePlay();
             menu.Items.Add(playPauseItem);
 
-            var nextItem = new WinForms.ToolStripMenuItem("⏭ Следующий трек");
+            var nextItem = new WinForms.ToolStripMenuItem("Следующий трек");
             nextItem.Click += (s, e) => AudioService.Next();
             menu.Items.Add(nextItem);
 
-            var prevItem = new WinForms.ToolStripMenuItem("⏮ Предыдущий трек");
-            prevItem.Click += (s, e) => AudioService.Previous();
-            menu.Items.Add(prevItem);
+            // подписи обновляем в момент открытия меню, чтобы они совпадали с текущим треком
+            menu.Opening += (s, e) =>
+            {
+                var track = AudioService.Current;
+                nowItem.Text = track == null ? "Ничего не играет" : Shorten(track.DisplayArtist + " — " + track.DisplayTitle, 48);
+                playPauseItem.Text = AudioService.IsPlaying ? "Пауза" : "Играть";
+                bool any = AudioService.Queue.Count > 0;
+                prevItem.Enabled = playPauseItem.Enabled = nextItem.Enabled = any;
+            };
 
             menu.Items.Add(new WinForms.ToolStripSeparator());
 
@@ -168,26 +172,22 @@ namespace VeriPlayer.Services
             if (track == null)
             {
                 _trayIcon.Text = "Veri Player";
+                return;
             }
-            else
-            {
-                var status = playing ? "▶" : "⏸";
-                var progress = "";
-                
-                // Добавляем прогресс если песня играет
-                if (duration > 0.4)
-                {
-                    var posTime = FormatTime(position);
-                    var durTime = FormatTime(duration);
-                    progress = $" [{posTime}/{durTime}]";
-                }
-                
-                _trayIcon.Text = $"{status} {track.DisplayTitle} — {track.DisplayArtist}{progress}";
-                
-                // Обрезаем если слишком длинно (макс 63 символа для NotifyIcon)
-                if (_trayIcon.Text.Length > 63)
-                    _trayIcon.Text = _trayIcon.Text.Substring(0, 60) + "...";
-            }
+
+            // прогресс всегда в конце строки: раньше длинное название обрезалось вместе с ним,
+            // и казалось, что подсказка не следит за треком
+            var status = playing ? "Играет" : "Пауза";
+            var progress = duration > 0.4 ? FormatTime(position) + " / " + FormatTime(duration) : "";
+            const int limit = 63; // предел подсказки значка в трее
+            var head = status + (progress.Length > 0 ? " · " + progress : "") + "\n";
+            _trayIcon.Text = head + Shorten(track.DisplayArtist + " — " + track.DisplayTitle, limit - head.Length);
+        }
+
+        private static string Shorten(string text, int max)
+        {
+            if (max < 4) return "";
+            return text.Length <= max ? text : text.Substring(0, max - 1).TrimEnd() + "…";
         }
 
         private static string FormatTime(double seconds)

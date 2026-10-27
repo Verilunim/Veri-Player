@@ -28,6 +28,15 @@ namespace VeriPlayer.Views.Panels
             BioBox.Text = user.Bio;
 
             var data = UserDataService.Current;
+            var minutes = ListeningService.TotalMinutes(data);
+            StatMinutes.Text = ListeningService.FormatMinutes(minutes);
+            StatHours.Text = minutes >= 60
+                ? "это " + (int)(minutes / 60) + " ч " + ((int)minutes % 60).ToString("00") + " мин музыки"
+                : "музыки за всё время";
+            var taste = TasteService.Build(data);
+            StatArtist.Text = taste.TopArtist ?? "пока не ясно";
+            StatGenre.Text = taste.TopGenre ?? "пока не ясно";
+
             MetaText.Text = user.RoleLabel +
                             "  ·  в Veri Player с " + user.CreatedText +
                             "  ·  входов: " + user.LoginCount +
